@@ -1,7 +1,7 @@
 {
   "name": "پیسفون",
   "short_name": "پیسفون",
-  "description": "پیام‌رسان آفلاین مدرن",
+  "description": "پیام‌رسان آفلاین مدرن با هوش مصنوعی",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -11,9 +11,23 @@
   "dir": "rtl",
   "lang": "fa",
   "icons": [
-    { "src": "icon.svg",      "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icon-mask.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
-    { "src": "icon.svg",      "sizes": "192x192", "type": "image/svg+xml" },
-    { "src": "icon.svg",      "sizes": "512x512", "type": "image/svg+xml" }
+    {
+      "src": "https://nakamology.ir/assets/static/bisphone.39a2979.282e18214f9280ef247bf25dbffc4dca.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://nakamology.ir/assets/static/bisphone.39a2979.282e18214f9280ef247bf25dbffc4dca.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://nakamology.ir/assets/static/bisphone.39a2979.282e18214f9280ef247bf25dbffc4dca.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
