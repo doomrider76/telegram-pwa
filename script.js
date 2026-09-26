@@ -9,7 +9,7 @@ const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const icon = (name, size = 20) => `<svg width="${size}" height="${size}"><use href="#i-${name}"/></svg>`;
 const KEY = 'pisfon_v3';
 
-/* ===================== VERSION (بدون تغییر) ===================== */
+/* ===================== VERSION ===================== */
 const APP_VERSION = '1.10 beta';
 const VERSION_KEY = 'pisfon_version';
 const CHANGELOG = [
@@ -39,16 +39,16 @@ const AV_EMOJIS = [
 
 /* پول اسم‌ها و ایموجی‌ها برای اعضای گروه */
 const GROUP_MEMBER_POOL = [
-  { name: 'علی', color: '#4dabf7', avatar: { type: 'emoji', value: '🧑' } },
-  { name: 'سارا', color: '#e5607a', avatar: { type: 'emoji', value: '👩' } },
-  { name: 'رضا', color: '#51cf66', avatar: { type: 'emoji', value: '👨' } },
-  { name: 'مینا', color: '#b197fc', avatar: { type: 'emoji', value: '👧' } },
-  { name: 'حسین', color: '#ffa94d', avatar: { type: 'emoji', value: '🧔' } },
-  { name: 'نگار', color: '#63e6be', avatar: { type: 'emoji', value: '👩‍🎨' } },
-  { name: 'امیر', color: '#ff8cc8', avatar: { type: 'emoji', value: '👨‍💻' } },
-  { name: 'مریم', color: '#74c0fc', avatar: { type: 'emoji', value: '👩‍🦰' } },
-  { name: 'کاوه', color: '#f783ac', avatar: { type: 'emoji', value: '👦' } },
-  { name: 'نیلوفر', color: '#ffd43b', avatar: { type: 'emoji', value: '👩‍🦱' } }
+  { name: 'علی', avatar: { type: 'emoji', value: '🧑' } },
+  { name: 'سارا', avatar: { type: 'emoji', value: '👩' } },
+  { name: 'رضا', avatar: { type: 'emoji', value: '👨' } },
+  { name: 'مینا', avatar: { type: 'emoji', value: '👧' } },
+  { name: 'حسین', avatar: { type: 'emoji', value: '🧔' } },
+  { name: 'نگار', avatar: { type: 'emoji', value: '👩‍🎨' } },
+  { name: 'امیر', avatar: { type: 'emoji', value: '👨‍💻' } },
+  { name: 'مریم', avatar: { type: 'emoji', value: '👩‍🦰' } },
+  { name: 'کاوه', avatar: { type: 'emoji', value: '👦' } },
+  { name: 'نیلوفر', avatar: { type: 'emoji', value: '👩‍🦱' } }
 ];
 
 /* ===================== AI CONFIG ===================== */
@@ -141,32 +141,32 @@ function defaultState() {
         isPublic: false,
         members: 4,
         membersList: [
-          { name: 'مامان', color: '#e5607a', avatar: { type: 'emoji', value: '👩' } },
-          { name: 'بابا', color: '#4dabf7', avatar: { type: 'emoji', value: '👨' } },
-          { name: 'سارا', color: '#b197fc', avatar: { type: 'emoji', value: '👧' } },
-          { name: 'رضا', color: '#51cf66', avatar: { type: 'emoji', value: '👦' } }
+          { name: 'مامان', avatar: { type: 'emoji', value: '👩' } },
+          { name: 'بابا', avatar: { type: 'emoji', value: '👨' } },
+          { name: 'سارا', avatar: { type: 'emoji', value: '👧' } },
+          { name: 'رضا', avatar: { type: 'emoji', value: '👦' } }
         ],
         unread: 0, pinned: false, muted: false,
         createdAt: now - 86400000,
         messages: [
           {
             id: rid(), out: false, ts: now - 7200000,
-            type: 'text', sender: 'مامان', color: '#e5607a',
+            type: 'text', sender: 'مامان',
             text: 'سلام بچه‌ها 👋 امروز کجا بریم؟'
           },
           {
             id: rid(), out: false, ts: now - 7100000,
-            type: 'text', sender: 'بابا', color: '#4dabf7',
+            type: 'text', sender: 'بابا',
             text: 'من پایه‌ام، هرجا بگید میام 🚗'
           },
           {
             id: rid(), out: false, ts: now - 6900000,
-            type: 'text', sender: 'سارا', color: '#b197fc',
+            type: 'text', sender: 'سارا',
             text: 'پارک نزدیک خونه خوبه 🌳'
           },
           {
             id: rid(), out: false, ts: now - 600000,
-            type: 'text', sender: 'رضا', color: '#51cf66',
+            type: 'text', sender: 'رضا',
             text: 'منم موافقم! ساعت ۵ بریم؟'
           }
         ]
@@ -209,7 +209,7 @@ function load() {
     if (!s.me.avatar) s.me.avatar = { type: 'gradient', value: 3 };
     if (typeof s.me.verified !== 'boolean') s.me.verified = true;
     s.chats.forEach(c => {
-      if (!c.avatar) c.avatar = { type: 'gradient', value: hashInt(c.name, AV_GRADS.length) };
+      if (!c.avatar) c.avatar = { type: 'gradient', value: 0 };
       if (typeof c.verified !== 'boolean') c.verified = false;
       if (typeof c.username !== 'string') c.username = '';
       if (typeof c.isPublic !== 'boolean') c.isPublic = c.type === 'channel';
@@ -223,14 +223,13 @@ function load() {
           if (pool) return { ...pool };
           return {
             name: n,
-            color: `hsl(${hashInt(n, 360)},70%,55%)`,
-            avatar: { type: 'gradient', value: hashInt(n, AV_GRADS.length) }
+            avatar: { type: 'gradient', value: 0 }
           };
         });
       }
     });
     s.contacts.forEach(c => {
-      if (!c.avatar) c.avatar = { type: 'gradient', value: hashInt(c.name, AV_GRADS.length) };
+      if (!c.avatar) c.avatar = { type: 'gradient', value: 0 };
       if (typeof c.verified !== 'boolean') c.verified = false;
     });
     return s;
@@ -251,6 +250,17 @@ function hashInt(str, mod) {
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
   return Math.abs(h) % mod;
 }
+
+/* رنگ یگانه بر اساس نام (HSL) — جلوگیری از تداخل رنگی بین کانال‌ها */
+function nameColorPair(name) {
+  const n = String(name || 'x');
+  let h = 0;
+  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  const hue2 = (hue + 32) % 360;
+  return [`hsl(${hue}, 68%, 55%)`, `hsl(${hue2}, 62%, 42%)`];
+}
+
 function initials(name) {
   const t = (name || '').trim();
   if (!t) return '?';
@@ -260,29 +270,28 @@ function initials(name) {
 }
 
 function avatarHTML(entity, size = 54) {
-  const av = entity.avatar || { type: 'gradient', value: hashInt(entity.name || '', AV_GRADS.length) };
+  const av = entity.avatar || { type: 'gradient', value: 0 };
   const dim = (size === 38 || size === 40) ? ' sm' : (size >= 86 ? ' big' : '');
   const klass = `avatar${dim}`;
+  const [c1, c2] = nameColorPair(entity.name);
   if (av.type === 'emoji') {
-    const g = AV_GRADS[hashInt(entity.name || '', AV_GRADS.length)];
-    return `<div class="${klass}" style="background:linear-gradient(135deg,${g[0]},${g[1]})">${av.value}</div>`;
+    return `<div class="${klass}" style="background:linear-gradient(135deg,${c1},${c2})">${av.value}</div>`;
   }
   if (av.type === 'image') {
     return `<div class="${klass}" style="background-image:url('${av.value}')"></div>`;
   }
-  const g = AV_GRADS[(av.value || 0) % AV_GRADS.length];
-  return `<div class="${klass}" style="background:linear-gradient(135deg,${g[0]},${g[1]})">${esc(initials(entity.name))}</div>`;
+  return `<div class="${klass}" style="background:linear-gradient(135deg,${c1},${c2})">${esc(initials(entity.name))}</div>`;
 }
+
 function avatarBgStyle(entity) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
-  if (av.type === 'image') return `background-image:url('${av.value}');background-size:cover;background-position:center`;
-  if (av.type === 'emoji') {
-    const g = AV_GRADS[hashInt(entity.name || '', AV_GRADS.length)];
-    return `background:linear-gradient(135deg,${g[0]},${g[1]})`;
+  const [c1, c2] = nameColorPair(entity.name);
+  if (av.type === 'image') {
+    return `background-image:url('${av.value}');background-size:cover;background-position:center`;
   }
-  const g = AV_GRADS[(av.value || 0) % AV_GRADS.length];
-  return `background:linear-gradient(135deg,${g[0]},${g[1]})`;
+  return `background:linear-gradient(135deg,${c1},${c2})`;
 }
+
 function avatarContent(entity) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
   if (av.type === 'emoji') return av.value;
@@ -583,22 +592,17 @@ function msgHTML(chat, m, prevMsg, nextMsg) {
     const sameSenderBefore = prevMsg && !prevMsg.out && prevMsg.sender === senderName;
     const sameSenderAfter = nextMsg && !nextMsg.out && nextMsg.sender === senderName;
 
-    // اطلاعات عضو
     const member = (chat.membersList || []).find(x => x.name === senderName);
-    const memberAv = member?.avatar || { type: 'gradient', value: hashInt(senderName, AV_GRADS.length) };
-    const memberBg = memberAv.type === 'emoji'
-      ? `background:linear-gradient(135deg,${AV_GRADS[hashInt(senderName, AV_GRADS.length)][0]},${AV_GRADS[hashInt(senderName, AV_GRADS.length)][1]})`
-      : (member?.color
-          ? `background:${member.color}`
-          : avatarBgStyle({ name: senderName, avatar: memberAv }));
+    const memberAv = member?.avatar || { type: 'gradient', value: 0 };
+    const [c1, c2] = nameColorPair(senderName);
+    const memberBg = `background:linear-gradient(135deg,${c1},${c2})`;
     const memberContent = memberAv.type === 'emoji' ? memberAv.value : initials(senderName);
-    const senderColor = member?.color || `hsl(${hashInt(senderName, 360)},70%,55%)`;
     const showName = !sameSenderBefore;
 
     return `<div class="msg-group-row">
       <div class="msg-group-av${sameSenderAfter ? ' empty' : ''}" style="${memberBg}">${sameSenderAfter ? '' : memberContent}</div>
       <div class="msg-group-wrap">
-        ${showName ? `<div class="msg-group-sender" style="color:${senderColor}">${esc(senderName)}</div>` : ''}
+        ${showName ? `<div class="msg-group-sender" style="color:${c1}">${esc(senderName)}</div>` : ''}
         <div class="${cls}" data-id="${m.id}">${msgInner}</div>
       </div>
     </div>`;
@@ -647,12 +651,13 @@ function renderMessages(scroll = true) {
     const typingClass = chat.type === 'ai' ? ' in typing ai-thinking' : ' in typing';
     if (chat.type === 'group' && chat.typingSender) {
       const member = (chat.membersList || []).find(x => x.name === chat.typingSender);
-      const memberBg = member?.color || `hsl(${hashInt(chat.typingSender, 360)},70%,55%)`;
+      const [c1, c2] = nameColorPair(chat.typingSender);
+      const memberBg = `background:linear-gradient(135deg,${c1},${c2})`;
       const memberContent = member?.avatar?.type === 'emoji' ? member.avatar.value : initials(chat.typingSender);
       html += `<div class="msg-group-row">
-        <div class="msg-group-av" style="background:${memberBg}">${memberContent}</div>
+        <div class="msg-group-av" style="${memberBg}">${memberContent}</div>
         <div class="msg-group-wrap">
-          <div class="msg-group-sender" style="color:${member?.color || 'var(--accent-hi)'}">${esc(chat.typingSender)}</div>
+          <div class="msg-group-sender" style="color:${c1}">${esc(chat.typingSender)}</div>
           <div class="msg${typingClass}"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
         </div>
       </div>`;
@@ -771,15 +776,14 @@ function renderInfo() {
     membersList = `
       <div class="section-title">اعضای گروه (${c.membersList.length.toLocaleString('fa-IR')})</div>
       <div class="group">
-        ${c.membersList.map((m, idx) => {
-          const av = m.avatar || { type: 'gradient', value: hashInt(m.name, AV_GRADS.length) };
-          const bg = av.type === 'emoji'
-            ? `background:linear-gradient(135deg,${AV_GRADS[hashInt(m.name, AV_GRADS.length)][0]},${AV_GRADS[hashInt(m.name, AV_GRADS.length)][1]})`
-            : `background:${m.color || 'var(--accent)'}`;
+        ${c.membersList.map((m) => {
+          const av = m.avatar || { type: 'gradient', value: 0 };
+          const [c1, c2] = nameColorPair(m.name);
+          const bg = `background:linear-gradient(135deg,${c1},${c2})`;
           const content = av.type === 'emoji' ? av.value : initials(m.name);
           return `<div class="row" style="cursor:default">
             <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);${bg}">${content}</div>
-            <span class="r-text" style="font-weight:600;color:${m.color || 'var(--text)'}">${esc(m.name)}</span>
+            <span class="r-text" style="font-weight:600;color:${c1}">${esc(m.name)}</span>
           </div>`;
         }).join('')}
       </div>
@@ -989,7 +993,6 @@ function sendMessage(extra = {}, textOverride) {
 
   if (state.settings.autoReply && chat.type !== 'saved' && chat.type !== 'channel') {
     if (state.settings.aiMode && navigator.onLine) {
-      // برای گروه و خصوصی: AI با پروفایل جواب می‌ده
       scheduleAIReply(chat, m.text);
     } else {
       scheduleReply(chat);
@@ -1009,7 +1012,6 @@ async function scheduleAIReply(chat, userMsg) {
     const members = c.membersList || [];
     if (!members.length) return;
 
-    // ۱ یا ۲ عضو تصادفی جواب می‌دن
     const numRepliers = Math.random() > 0.5 ? 2 : 1;
     const shuffled = members.slice().sort(() => Math.random() - 0.5);
     const repliers = shuffled.slice(0, Math.min(numRepliers, members.length));
@@ -1028,7 +1030,6 @@ async function scheduleAIReply(chat, userMsg) {
         .slice(-6)
         .map(x => ({ out: x.out, text: x.text, sender: x.sender }));
 
-      // پرامپت مخصوص این عضو
       const memberPrompt = `تو الان نقش «${member.name}» رو داری، یکی از اعضای گروه چت دوستانه «${c.name}» هستی. ` +
         `جواب‌ها رو کوتاه (حداکثر ۲ خط)، فارسی خودمونی و دوستانه بده. از ایموجی به‌اندازه استفاده کن.`;
 
@@ -1044,8 +1045,7 @@ async function scheduleAIReply(chat, userMsg) {
       c.messages.push({
         id: rid(), text: replyText, out: false, ts: Date.now(),
         type: 'text', replyTo: null,
-        sender: member.name,
-        color: member.color
+        sender: member.name
       });
       if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
@@ -1077,7 +1077,7 @@ async function scheduleAIReply(chat, userMsg) {
   c.typing = false;
   c.messages.push({
     id: rid(), text: replyText, out: false, ts: Date.now(),
-    type: 'text', replyTo: null, sender: null, color: null
+    type: 'text', replyTo: null, sender: null
   });
   if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
   if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
@@ -1103,17 +1103,16 @@ function scheduleReply(chat) {
     setTimeout(() => {
       c.typing = false;
       const isGroup = c.type === 'group';
-      let sender = null, color = null;
+      let sender = null;
       if (isGroup && c.membersList?.length) {
         const member = c.membersList[Math.floor(Math.random() * c.membersList.length)];
         sender = member.name;
-        color = member.color;
         c.typingSender = null;
       }
       c.messages.push({
         id: rid(), text: REPLIES[Math.floor(Math.random() * REPLIES.length)],
         out: false, ts: Date.now(), type: 'text', replyTo: null,
-        sender, color
+        sender
       });
       if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
@@ -1135,16 +1134,15 @@ setInterval(() => {
   if (!cands.length) return;
   const c = cands[Math.floor(Math.random() * cands.length)];
   const isGroup = c.type === 'group';
-  let sender = null, color = null;
+  let sender = null;
   if (isGroup && c.membersList?.length) {
     const member = c.membersList[Math.floor(Math.random() * c.membersList.length)];
     sender = member.name;
-    color = member.color;
   }
   c.messages.push({
     id: rid(), text: AMBIENT[Math.floor(Math.random() * AMBIENT.length)],
     out: false, ts: Date.now(), type: 'text', replyTo: null,
-    sender, color
+    sender
   });
   if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
   if (activeChatId === c.id) renderMessages();
@@ -1799,7 +1797,7 @@ function promptChatName(type) {
     if (!name) { toast('نام نمی‌تونه خالی باشه'); return; }
     const data = {
       name, type,
-      avatar: { type: 'gradient', value: hashInt(name, AV_GRADS.length) },
+      avatar: { type: 'gradient', value: 0 },
       verified: false,
       username: '',
       isPublic: type === 'channel'
@@ -1813,7 +1811,6 @@ function promptChatName(type) {
           const n = parseInt(num, 10);
           const count = (isNaN(n) || n < 0) ? 0 : Math.min(n, 9999999);
           data.members = count;
-          // برای گروه: تولید اعضا از pool
           if (type === 'group') {
             const shuffled = GROUP_MEMBER_POOL.slice().sort(() => Math.random() - 0.5);
             data.membersList = shuffled.slice(0, Math.min(count, shuffled.length)).map(m => ({ ...m }));
