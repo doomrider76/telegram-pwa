@@ -1,4 +1,4 @@
-const CACHE = 'pisfon-v13';
+const CACHE = 'pisfon-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -25,12 +25,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-
   if (e.request.url.includes('pollinations.ai')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;
   }
-
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
