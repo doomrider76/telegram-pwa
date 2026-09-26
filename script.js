@@ -10,6 +10,78 @@ const icon = (name, size = 20) => `<svg width="${size}" height="${size}"><use hr
 const KEY = 'pisfon_v3';
 const COLOR_FIX_KEY = 'pisfon_color_fix_v1';
 
+/* =========================================================
+   FULLSCREEN + ORIENTATION LOCK
+   ========================================================= */
+let _fsOnce = false;
+
+function requestFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen
+           || el.webkitRequestFullscreen
+           || el.mozRequestFullScreen
+           || el.msRequestFullscreen;
+  if (!req) return;
+  if (document.fullscreenElement || document.webkitFullscreenElement) return;
+  try {
+    const p = req.call(el, { navigationUI: 'hide' });
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) {}
+}
+
+function lockOrientation() {
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait').catch(() => {});
+    } else if (screen.lockOrientation) {
+      screen.lockOrientation('portrait');
+    }
+  } catch (e) {}
+}
+
+function tryFullscreenOnce() {
+  if (_fsOnce) return;
+  _fsOnce = true;
+  requestFullscreen();
+  lockOrientation();
+}
+
+['touchstart', 'click', 'keydown'].forEach(ev => {
+  document.addEventListener(ev, tryFullscreenOnce, { once: true, passive: true });
+});
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    _fsOnce = false;
+    ['touchstart', 'click', 'keydown'].forEach(ev => {
+      document.addEventListener(ev, tryFullscreenOnce, { once: true, passive: true });
+    });
+  }
+});
+document.addEventListener('webkitfullscreenchange', () => {
+  if (!document.webkitFullscreenElement) {
+    _fsOnce = false;
+    ['touchstart', 'click', 'keydown'].forEach(ev => {
+      document.addEventListener(ev, tryFullscreenOnce, { once: true, passive: true });
+    });
+  }
+});
+
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('contextmenu', e => {
+  if (!e.target.closest('#msg-input') && !e.target.closest('.btext')) {
+    e.preventDefault();
+  }
+});
+
+document.body && document.body.addEventListener('touchmove', e => {
+  if (e.target === document.body) e.preventDefault();
+}, { passive: false });
+
 /* ===================== VIEWPORT FIX ===================== */
 function setViewport() {
   const h = window.innerHeight;
@@ -33,16 +105,16 @@ document.addEventListener('focusout', () => setTimeout(setViewport, 300));
 const APP_VERSION = '1.10 beta';
 const VERSION_KEY = 'pisfon_version';
 const CHANGELOG = [
-  'فیکس پالت رنگ پروفایل — الان هر ۱۲ رنگ درست کار می‌کنه',
-  'شماره تلفن با پیشوند +98 و چپ‌چین (LTR)',
+  'اجرای تمام‌صفحه روی همه گوشی‌ها (Samsung، iPhone، Android)',
+  'سازگاری با Notch، Punch-hole، Dynamic Island',
+  'فیکس پالت رنگ پروفایل — هر ۱۲ رنگ',
+  'شماره تلفن با +98 و چپ‌چین',
   'دیزاین مدرن ۲۰۲۵',
-  'فیکس موقعیت باکس‌ها روی هر گوشی و مانیتور',
-  'آواتار فرستنده کنار پیام در گروه (مثل تلگرام)',
-  'در گروه‌ها، هوش مصنوعی با پروفایل هر عضو جواب می‌ده',
-  'باکس پیام‌ها با طراحی سه‌بعدی',
-  'دستیار پیسفون با هوش مصنوعی رایگان',
-  'تیک آبی، آیدی و عمومی/خصوصی',
-  'ایموجی پیکر با ۹ دسته‌بندی'
+  'آواتار فرستنده در گروه',
+  'هوش مصنوعی در گروه و چت خصوصی',
+  'باکس پیام‌ها سه‌بعدی',
+  'تیک آبی، آیدی، عمومی/خصوصی',
+  'ایموجی پیکر با ۹ دسته'
 ];
 
 const renderedMsgIds = new Set();
@@ -139,16 +211,10 @@ function defaultState() {
         unread: 0, pinned: true, muted: false,
         createdAt: now - 3600000,
         messages: [
-          {
-            id: rid(), out: false, ts: now - 60000,
-            type: 'text',
-            text: 'سلام 👋 من دستیار هوشمند پیسفون هستم.\nهر سوالی داری بپرس — اگه اینترنت داشته باشی با هوش مصنوعی جوابت می‌دم.'
-          },
-          {
-            id: rid(), out: false, ts: now - 55000,
-            type: 'text',
-            text: 'مثلاً:\n• چطور کانال بسازم؟\n• یه شوخی بگو\n• هوای تهران چطوره؟'
-          }
+          { id: rid(), out: false, ts: now - 60000, type: 'text',
+            text: 'سلام 👋 من دستیار هوشمند پیسفون هستم.\nهر سوالی داری بپرس — اگه اینترنت داشته باشی با هوش مصنوعی جوابت می‌دم.' },
+          { id: rid(), out: false, ts: now - 55000, type: 'text',
+            text: 'مثلاً:\n• چطور کانال بسازم؟\n• یه شوخی بگو\n• هوای تهران چطوره؟' }
         ]
       },
       {
@@ -186,11 +252,8 @@ function defaultState() {
         unread: 0, pinned: false, muted: false,
         createdAt: now - 86400000 * 3,
         messages: [
-          {
-            id: rid(), out: true, ts: now - 86400000 * 2,
-            type: 'text',
-            text: '📌 یادداشت‌های من:\n\n• لیست خرید\n• تماس با پشتیبانی\n• ایده‌های پروژه جدید'
-          }
+          { id: rid(), out: true, ts: now - 86400000 * 2, type: 'text',
+            text: '📌 یادداشت‌های من:\n\n• لیست خرید\n• تماس با پشتیبانی\n• ایده‌های پروژه جدید' }
         ]
       }
     ],
@@ -214,7 +277,6 @@ function load() {
     if (typeof s.me.verified !== 'boolean') s.me.verified = true;
     if (!s.me.phone) s.me.phone = '+98 ';
 
-    // Migration برای رنگ‌های تکراری
     const needsColorFix = !localStorage.getItem(COLOR_FIX_KEY);
     s.chats.forEach((c, i) => {
       if (!c.avatar) c.avatar = { type: 'gradient', value: i % AV_GRADS.length };
@@ -224,11 +286,9 @@ function load() {
       if ((c.type === 'group' || c.type === 'channel') && typeof c.members !== 'number') {
         c.members = c.type === 'group' ? 1 : 0;
       }
-      // فیکس رنگ‌های تکراری
       if (needsColorFix && c.avatar && c.avatar.type === 'gradient') {
         c.avatar.value = i % AV_GRADS.length;
       }
-      // مهاجرت membersList
       if (c.type === 'group' && !c.membersList) {
         c.membersList = (c.memberNames || []).map(n => {
           const pool = GROUP_MEMBER_POOL.find(p => p.name === n);
@@ -280,7 +340,6 @@ function initials(name) {
   return parts[0][0] + parts[1][0];
 }
 
-/* ========== AVATAR — FIXED ========== */
 function avatarHTML(entity, size = 54) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
   const dim = (size === 38 || size === 40) ? ' sm' : (size >= 86 ? ' big' : '');
@@ -488,7 +547,7 @@ function renderSettings() {
       </div>
       <div class="row" style="opacity:.7;cursor:default">
         <span class="r-icon" style="background:linear-gradient(180deg,#bf5af2,#8e3fd6);opacity:.7">${icon('brain', 18)}</span>
-        <span class="r-text" style="font-size:13px;color:var(--text2);font-weight:400;line-height:1.5">
+        <span class="r-text" style="font-size:13px;color:var(--text-2);font-weight:400;line-height:1.5">
           در گروه‌ها، اعضای گروه با پروفایل خودشون جواب می‌دن.
         </span>
       </div>
@@ -1366,7 +1425,7 @@ function openSheet(html) {
 function closeSheet() { sheetOverlay.classList.remove('show'); }
 sheetOverlay.addEventListener('click', e => { if (e.target === sheetOverlay) closeSheet(); });
 
-/* ===================== AVATAR PICKER — FIXED ============= */
+/* ===================== AVATAR PICKER ===================== */
 let avatarTarget = null;
 let avatarTargetType = null;
 
@@ -1393,7 +1452,6 @@ function renderAvatarPicker(tab = 'gradient') {
 
   let body = '';
   if (tab === 'gradient') {
-    // ✅ FIX: مقدار پیش‌فرض اگه نباشه، 0 در نظر گرفته می‌شه
     const curVal = (typeof current.value === 'number') ? current.value : 0;
     body = `<div class="av-grid">` +
       AV_GRADS.map((g, i) => {
@@ -1437,13 +1495,11 @@ function renderAvatarPicker(tab = 'gradient') {
   $$('#avatar-panel [data-avtab]').forEach(b =>
     b.addEventListener('click', () => renderAvatarPicker(b.dataset.avtab)));
 
-  // ✅ FIX: کلیک روی هر رنگ، مقدارش رو ذخیره می‌کنه
   $$('#avatar-panel [data-grad]').forEach(b =>
     b.addEventListener('click', () => {
       const idx = parseInt(b.dataset.grad, 10);
       entity.avatar = { type: 'gradient', value: idx };
       applyAvatarChange();
-      // Re-render picker برای نمایش انتخاب جدید
       renderAvatarPicker('gradient');
     }));
 
@@ -1899,7 +1955,6 @@ $('#settings-body').addEventListener('click', e => {
       state.me.name = v.trim(); renderSettings(); renderChatList(); save(); toast('ذخیره شد');
     });
 
-    // ✅ FIX: شماره تلفن با +98 و LTR
     if (act === 'edit-phone') {
       const currentPhone = state.me.phone || '+98 ';
       showPrompt('شماره تلفن', currentPhone, v => {
@@ -1907,12 +1962,10 @@ $('#settings-body').addEventListener('click', e => {
         if (!num || num === '+98') {
           state.me.phone = '';
         } else {
-          // اگه با +98 شروع نشد، اضافه کن
           if (!num.startsWith('+98')) {
             num = num.replace(/^\+?9?8?\s*/, '').replace(/\D/g, '');
             num = '+98 ' + num;
           }
-          // فرمت‌دهی ساده
           num = num.replace(/^(\+98)\s*(\d{3})\s*(\d{3})\s*(\d{4}).*$/, '$1 $2 $3 $4');
           state.me.phone = num;
         }
