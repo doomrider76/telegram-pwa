@@ -1,5 +1,5 @@
 /* =========================================================
-   پیسفون v2.1
+   پیسفون v1.10 beta
    ========================================================= */
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -7,12 +7,25 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const icon = (name, size = 20) => `<svg width="${size}" height="${size}"><use href="#i-${name}"/></svg>`;
-const KEY = 'pisfon_v2';
+const KEY = 'pisfon_v3';
 
-/* ✅ Set برای پیام‌های رندر شده — جلوگیری از انیمیشن مجدد */
+/* ===================== VERSION (بدون تغییر) ===================== */
+const APP_VERSION = '1.10 beta';
+const VERSION_KEY = 'pisfon_version';
+const CHANGELOG = [
+  'باکس پیام‌ها با طراحی سه‌بعدی و گرادیانت زیبا',
+  'آواتار فرستنده کنار پیام در گروه (مثل تلگرام)',
+  'در گروه‌ها، هوش مصنوعی با پروفایل هر عضو جواب می‌ده',
+  'گروه پیش‌فرض «خانواده» با ۴ عضو نمونه',
+  'بهبود سایه‌ها و عمق پیام‌های ارسالی و دریافتی',
+  'انیمیشن لود نرم + اعلان بروزرسانی',
+  'دستیار پیسفون با هوش مصنوعی رایگان',
+  'تیک آبی، آیدی و عمومی/خصوصی',
+  'ایموجی پیکر با ۹ دسته‌بندی'
+];
+
 const renderedMsgIds = new Set();
 
-/* AVATAR PALETTE */
 const AV_GRADS = [
   ['#ff6b6b','#c92a2a'], ['#51cf66','#2b8a3e'], ['#ffd43b','#e67700'],
   ['#4dabf7','#1864ab'], ['#b197fc','#5f3dc4'], ['#ff8cc8','#c2255c'],
@@ -24,21 +37,164 @@ const AV_EMOJIS = [
   '🌸','🌺','🌈','⚡','💎','🔥','⭐','🎯','🚀','🎨','🎵','📷','🍕','☕','🍀','🌟'
 ];
 
-/* STATE */
+/* پول اسم‌ها و ایموجی‌ها برای اعضای گروه */
+const GROUP_MEMBER_POOL = [
+  { name: 'علی', color: '#4dabf7', avatar: { type: 'emoji', value: '🧑' } },
+  { name: 'سارا', color: '#e5607a', avatar: { type: 'emoji', value: '👩' } },
+  { name: 'رضا', color: '#51cf66', avatar: { type: 'emoji', value: '👨' } },
+  { name: 'مینا', color: '#b197fc', avatar: { type: 'emoji', value: '👧' } },
+  { name: 'حسین', color: '#ffa94d', avatar: { type: 'emoji', value: '🧔' } },
+  { name: 'نگار', color: '#63e6be', avatar: { type: 'emoji', value: '👩‍🎨' } },
+  { name: 'امیر', color: '#ff8cc8', avatar: { type: 'emoji', value: '👨‍💻' } },
+  { name: 'مریم', color: '#74c0fc', avatar: { type: 'emoji', value: '👩‍🦰' } },
+  { name: 'کاوه', color: '#f783ac', avatar: { type: 'emoji', value: '👦' } },
+  { name: 'نیلوفر', color: '#ffd43b', avatar: { type: 'emoji', value: '👩‍🦱' } }
+];
+
+/* ===================== AI CONFIG ===================== */
+const AI_SYSTEM_PROMPT =
+  'تو دستیار هوشمند پیسفون هستی. جواب‌ها رو کوتاه (حداکثر ۲ خط)، دوستانه، مفید و به فارسی خودمونی بده. ' +
+  'اگر سوال فنی بود دقیق جواب بده. از ایموجی به‌اندازه استفاده کن.';
+const AI_API_URL = 'https://text.pollinations.ai/';
+
+async function fetchAIReply(userMessage, history = [], systemPrompt = null) {
+  if (!navigator.onLine) return null;
+  try {
+    let fullPrompt = userMessage;
+    if (history.length > 0) {
+      const ctx = history.slice(-6).map(m =>
+        (m.out ? 'کاربر: ' : (m.sender || 'دستیار') + ': ') + m.text
+      ).join('\n');
+      fullPrompt = `تاریخچه گفتگو:\n${ctx}\n\nپیام جدید کاربر: ${userMessage}`;
+    }
+    const sys = systemPrompt || AI_SYSTEM_PROMPT;
+    const url = AI_API_URL + encodeURIComponent(fullPrompt)
+              + '?model=openai&system=' + encodeURIComponent(sys);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    let text = await res.text();
+    text = (text || '').trim();
+    text = text.replace(/^(دستیار:|Assistant:)\s*/i, '').trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
+/* ===================== DEFAULT STATE ===================== */
 function defaultState() {
+  const now = Date.now();
+  const aiChatId = 'ai_assistant';
+  const savedChatId = 'saved_msgs';
+  const groupId = 'family_group';
+
   return {
     me: {
       name: 'من',
       phone: '',
-      avatar: { type: 'gradient', value: 0 },
-      verified: false
+      avatar: { type: 'gradient', value: 3 },
+      verified: true
     },
     theme: 'dark',
-    settings: { autoReply: true, autoIncoming: false, enterToSend: true, sounds: false },
-    chats: [],
+    settings: {
+      autoReply: true,
+      autoIncoming: false,
+      enterToSend: true,
+      sounds: false,
+      aiMode: true
+    },
+    chats: [
+      {
+        id: aiChatId,
+        name: 'دستیار پیسفون',
+        type: 'ai',
+        avatar: { type: 'gradient', value: 4 },
+        verified: true,
+        username: 'pisfon_ai',
+        isPublic: true,
+        online: true,
+        unread: 0, pinned: true, muted: false,
+        createdAt: now - 3600000,
+        messages: [
+          {
+            id: rid(), out: false, ts: now - 60000,
+            type: 'text',
+            text: 'سلام 👋 من دستیار هوشمند پیسفون هستم.\nهر سوالی داری بپرس — اگه اینترنت داشته باشی با هوش مصنوعی جوابت می‌دم.'
+          },
+          {
+            id: rid(), out: false, ts: now - 55000,
+            type: 'text',
+            text: 'مثلاً:\n• چطور کانال بسازم؟\n• یه شوخی بگو\n• هوای تهران چطوره؟'
+          }
+        ]
+      },
+      {
+        id: groupId,
+        name: 'گروه خانواده',
+        type: 'group',
+        avatar: { type: 'gradient', value: 5 },
+        verified: false,
+        username: '',
+        isPublic: false,
+        members: 4,
+        membersList: [
+          { name: 'مامان', color: '#e5607a', avatar: { type: 'emoji', value: '👩' } },
+          { name: 'بابا', color: '#4dabf7', avatar: { type: 'emoji', value: '👨' } },
+          { name: 'سارا', color: '#b197fc', avatar: { type: 'emoji', value: '👧' } },
+          { name: 'رضا', color: '#51cf66', avatar: { type: 'emoji', value: '👦' } }
+        ],
+        unread: 0, pinned: false, muted: false,
+        createdAt: now - 86400000,
+        messages: [
+          {
+            id: rid(), out: false, ts: now - 7200000,
+            type: 'text', sender: 'مامان', color: '#e5607a',
+            text: 'سلام بچه‌ها 👋 امروز کجا بریم؟'
+          },
+          {
+            id: rid(), out: false, ts: now - 7100000,
+            type: 'text', sender: 'بابا', color: '#4dabf7',
+            text: 'من پایه‌ام، هرجا بگید میام 🚗'
+          },
+          {
+            id: rid(), out: false, ts: now - 6900000,
+            type: 'text', sender: 'سارا', color: '#b197fc',
+            text: 'پارک نزدیک خونه خوبه 🌳'
+          },
+          {
+            id: rid(), out: false, ts: now - 600000,
+            type: 'text', sender: 'رضا', color: '#51cf66',
+            text: 'منم موافقم! ساعت ۵ بریم؟'
+          }
+        ]
+      },
+      {
+        id: savedChatId,
+        name: 'پیام‌های ذخیره‌شده',
+        type: 'saved',
+        avatar: { type: 'gradient', value: 6 },
+        verified: false,
+        username: '',
+        isPublic: false,
+        unread: 0, pinned: false, muted: false,
+        createdAt: now - 86400000 * 3,
+        messages: [
+          {
+            id: rid(), out: true, ts: now - 86400000 * 2,
+            type: 'text',
+            text: '📌 یادداشت‌های من:\n\n• لیست خرید\n• تماس با پشتیبانی\n• ایده‌های پروژه جدید'
+          }
+        ]
+      }
+    ],
     contacts: []
   };
 }
+
+/* ===================== LOAD / SAVE ===================== */
 let state;
 function load() {
   try {
@@ -47,15 +203,30 @@ function load() {
     const s = JSON.parse(raw);
     if (!s || !Array.isArray(s.chats)) return null;
     s.settings = Object.assign(
-      { autoReply: true, autoIncoming: false, enterToSend: true, sounds: false }, s.settings);
+      { autoReply: true, autoIncoming: false, enterToSend: true, sounds: false, aiMode: true },
+      s.settings);
     if (!Array.isArray(s.contacts)) s.contacts = [];
-    if (!s.me.avatar) s.me.avatar = { type: 'gradient', value: 0 };
-    if (typeof s.me.verified !== 'boolean') s.me.verified = false;
+    if (!s.me.avatar) s.me.avatar = { type: 'gradient', value: 3 };
+    if (typeof s.me.verified !== 'boolean') s.me.verified = true;
     s.chats.forEach(c => {
       if (!c.avatar) c.avatar = { type: 'gradient', value: hashInt(c.name, AV_GRADS.length) };
       if (typeof c.verified !== 'boolean') c.verified = false;
+      if (typeof c.username !== 'string') c.username = '';
+      if (typeof c.isPublic !== 'boolean') c.isPublic = c.type === 'channel';
       if ((c.type === 'group' || c.type === 'channel') && typeof c.members !== 'number') {
         c.members = c.type === 'group' ? 1 : 0;
+      }
+      // مهاجرت: اگه گروه membersList نداره ولی memberNames داره
+      if (c.type === 'group' && !c.membersList) {
+        c.membersList = (c.memberNames || []).map(n => {
+          const pool = GROUP_MEMBER_POOL.find(p => p.name === n);
+          if (pool) return { ...pool };
+          return {
+            name: n,
+            color: `hsl(${hashInt(n, 360)},70%,55%)`,
+            avatar: { type: 'gradient', value: hashInt(n, AV_GRADS.length) }
+          };
+        });
       }
     });
     s.contacts.forEach(c => {
@@ -74,7 +245,7 @@ function save() {
 }
 state = load() || defaultState();
 
-/* HASH */
+/* ===================== HELPERS ===================== */
 function hashInt(str, mod) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
@@ -88,7 +259,6 @@ function initials(name) {
   return parts[0][0] + parts[1][0];
 }
 
-/* AVATAR */
 function avatarHTML(entity, size = 54) {
   const av = entity.avatar || { type: 'gradient', value: hashInt(entity.name || '', AV_GRADS.length) };
   const dim = (size === 38 || size === 40) ? ' sm' : (size >= 86 ? ' big' : '');
@@ -105,7 +275,7 @@ function avatarHTML(entity, size = 54) {
 }
 function avatarBgStyle(entity) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
-  if (av.type === 'image') return `background-image:url('${av.value}')`;
+  if (av.type === 'image') return `background-image:url('${av.value}');background-size:cover;background-position:center`;
   if (av.type === 'emoji') {
     const g = AV_GRADS[hashInt(entity.name || '', AV_GRADS.length)];
     return `background:linear-gradient(135deg,${g[0]},${g[1]})`;
@@ -120,7 +290,6 @@ function avatarContent(entity) {
   return esc(initials(entity.name));
 }
 
-/* VERIFIED */
 function vfHTML(size = 17) {
   return `<svg class="vf" width="${size}" height="${size}" viewBox="0 0 24 24"><use href="#i-verified"/></svg>`;
 }
@@ -128,7 +297,6 @@ function nameWithVf(name, verified, vfSize = 17) {
   return `${esc(name)}${verified ? vfHTML(vfSize) : ''}`;
 }
 
-/* TIME */
 const fmtTime = ts => new Date(ts).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
 const dayKey = ts => new Date(ts).toDateString();
 function fmtDay(ts) {
@@ -148,7 +316,6 @@ function fmtListTime(ts) {
 }
 const fmtDur = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-/* TOAST */
 let toastTimer;
 function toast(t) {
   const el = $('#toast');
@@ -158,13 +325,13 @@ function toast(t) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
 }
 
-/* CHAT HELPERS */
 const getChat = id => state.chats.find(c => c.id === id);
 const lastMsg = c => c.messages[c.messages.length - 1];
 const lastTs  = c => (lastMsg(c) ? lastMsg(c).ts : c.createdAt || 0);
 function chatStatus(c) {
-  if (c.typing) return 'در حال نوشتن…';
+  if (c.typing) return c.type === 'ai' ? 'در حال تایپ…' : 'در حال نوشتن…';
   if (c.type === 'saved') return 'یادداشت‌های شخصی';
+  if (c.type === 'ai') return navigator.onLine ? 'آنلاین — هوش مصنوعی' : 'آفلاین — پاسخ آماده';
   if (c.type === 'group') return (c.members || 1).toLocaleString('fa-IR') + ' عضو';
   if (c.type === 'channel') return (c.members || 0).toLocaleString('fa-IR') + ' عضو';
   return c.online ? 'آنلاین' : (c.lastSeen || 'آخرین بازدید به تازگی');
@@ -183,7 +350,7 @@ function previewText(c) {
   return t;
 }
 
-/* RENDER: CHAT LIST */
+/* ===================== RENDER: CHAT LIST ===================== */
 function renderChatList() {
   const q = ($('#search-input').value || '').trim().toLowerCase();
   let list = state.chats.filter(c => !q || c.name.toLowerCase().includes(q));
@@ -224,7 +391,7 @@ function renderChatList() {
   }).join('');
 }
 
-/* RENDER: CONTACTS */
+/* ===================== RENDER: CONTACTS ===================== */
 function renderContacts() {
   const box = $('#contacts-list');
   if (!state.contacts.length) {
@@ -247,7 +414,7 @@ function renderContacts() {
     </div>`).join('');
 }
 
-/* RENDER: SETTINGS */
+/* ===================== RENDER: SETTINGS ===================== */
 function renderSettings() {
   const s = state.settings;
   const me = state.me;
@@ -281,11 +448,26 @@ function renderSettings() {
         <span class="sl"></span></label>
       </div>
     </div>
+    <div class="section-title">هوش مصنوعی</div>
+    <div class="group">
+      <div class="row">
+        <span class="r-icon purple">${icon('sparkle', 20)}</span>
+        <span class="r-text">پاسخ هوشمند</span>
+        <label class="switch purple"><input type="checkbox" data-set="aiMode" ${s.aiMode ? 'checked' : ''}>
+        <span class="sl"></span></label>
+      </div>
+      <div class="row" style="opacity:.7;cursor:default">
+        <span class="r-icon" style="background:linear-gradient(180deg,#bf5af2,#8e3fd6);opacity:.7">${icon('brain', 18)}</span>
+        <span class="r-text" style="font-size:13px;color:var(--text2);font-weight:400;line-height:1.5">
+          در گروه‌ها، اعضای گروه با پروفایل خودشون جواب می‌دن.
+        </span>
+      </div>
+    </div>
     <div class="section-title">رفتار</div>
     <div class="group">
       <div class="row">
         <span class="r-icon">${icon('chat', 20)}</span>
-        <span class="r-text">پاسخ خودکار</span>
+        <span class="r-text">پاسخ خودکار مخاطبین</span>
         <label class="switch"><input type="checkbox" data-set="autoReply" ${s.autoReply ? 'checked' : ''}>
         <span class="sl"></span></label>
       </div>
@@ -322,21 +504,22 @@ function renderSettings() {
       </div>
     </div>
     <div class="empty" style="padding:20px 40px 40px;font-size:12px;opacity:.55">
-      پیسفون نسخه ۲.۱ — حجم: ${(JSON.stringify(state).length / 1024).toFixed(1)}KB
+      پیسفون نسخه ${APP_VERSION} — حجم: ${(JSON.stringify(state).length / 1024).toFixed(1)}KB
     </div>
   `;
 }
 
-/* RENDER: MESSAGES */
+/* ===================== RENDER: MESSAGES ===================== */
 let activeChatId = null;
 let replyToMsg = null;
 
-function msgHTML(chat, m) {
-  // ✅ جلوگیری از انیمیشن مجدد پیام‌های قدیمی
+function msgHTML(chat, m, prevMsg, nextMsg) {
   const isNew = !renderedMsgIds.has(m.id);
   renderedMsgIds.add(m.id);
   const animClass = isNew ? '' : ' no-anim';
-  const cls = `msg ${m.out ? 'out' : 'in'}${animClass}`;
+  const aiClass = (chat.type === 'ai' && !m.out) ? ' ai' : '';
+  const cls = `msg ${m.out ? 'out' : 'in'}${animClass}${aiClass}`;
+
   let inner = '';
 
   if (m.replyTo) {
@@ -346,6 +529,20 @@ function msgHTML(chat, m) {
       const tx = r.type === 'text' ? r.text : (r.type === 'voice' ? 'پیام صوتی' : 'پیوست');
       inner += `<div class="reply-quote"><b>${esc(nm)}</b><p>${esc(tx)}</p></div>`;
     }
+  }
+
+  // هدر کانال
+  if (chat.type === 'channel') {
+    const chAv = avatarContent(chat);
+    const chBg = avatarBgStyle(chat);
+    inner += `<div class="ch-head">
+      <div class="ch-av" style="${chBg}">${chAv}</div>
+      <div class="ch-name">${esc(chat.name)}</div>
+    </div>`;
+  }
+
+  if (chat.type === 'ai' && !m.out) {
+    inner += `<div class="ai-label">${icon('sparkle', 12)} دستیار هوشمند</div>`;
   }
 
   if (m.type === 'photo' || m.type === 'location') {
@@ -371,15 +568,6 @@ function msgHTML(chat, m) {
     inner += `<div class="btext">${esc(m.text)}</div>`;
   }
 
-  // نام فرستنده در گروه
-  if (!m.out && chat.type === 'group' && m.sender) {
-    inner = `<div class="sender" style="color:${m.color || 'var(--accent-hi)'}">${esc(m.sender)}</div>` + inner;
-  }
-  // ✅ نام کانال بالای پیام‌های کانال
-  if (!m.out && chat.type === 'channel') {
-    inner = `<div class="sender channel-name">${esc(chat.name)}</div>` + inner;
-  }
-
   let ticks = '';
   if (m.out) {
     if (m.status === 'read') ticks = `<span class="ticks read">${icon('double-check', 15)}</span>`;
@@ -387,8 +575,36 @@ function msgHTML(chat, m) {
     else ticks = `<span class="ticks">${icon('check', 15)}</span>`;
   }
 
-  return `<div class="${cls}" data-id="${m.id}">${inner}
-    <div class="meta"><span>${fmtTime(m.ts)}</span>${ticks}</div></div>`;
+  const msgInner = `${inner}<div class="meta"><span>${fmtTime(m.ts)}</span>${ticks}</div>`;
+
+  // ============ GROUP: آواتار + اسم ============
+  if (chat.type === 'group' && !m.out) {
+    const senderName = m.sender || 'عضو';
+    const sameSenderBefore = prevMsg && !prevMsg.out && prevMsg.sender === senderName;
+    const sameSenderAfter = nextMsg && !nextMsg.out && nextMsg.sender === senderName;
+
+    // اطلاعات عضو
+    const member = (chat.membersList || []).find(x => x.name === senderName);
+    const memberAv = member?.avatar || { type: 'gradient', value: hashInt(senderName, AV_GRADS.length) };
+    const memberBg = memberAv.type === 'emoji'
+      ? `background:linear-gradient(135deg,${AV_GRADS[hashInt(senderName, AV_GRADS.length)][0]},${AV_GRADS[hashInt(senderName, AV_GRADS.length)][1]})`
+      : (member?.color
+          ? `background:${member.color}`
+          : avatarBgStyle({ name: senderName, avatar: memberAv }));
+    const memberContent = memberAv.type === 'emoji' ? memberAv.value : initials(senderName);
+    const senderColor = member?.color || `hsl(${hashInt(senderName, 360)},70%,55%)`;
+    const showName = !sameSenderBefore;
+
+    return `<div class="msg-group-row">
+      <div class="msg-group-av${sameSenderAfter ? ' empty' : ''}" style="${memberBg}">${sameSenderAfter ? '' : memberContent}</div>
+      <div class="msg-group-wrap">
+        ${showName ? `<div class="msg-group-sender" style="color:${senderColor}">${esc(senderName)}</div>` : ''}
+        <div class="${cls}" data-id="${m.id}">${msgInner}</div>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="${cls}" data-id="${m.id}">${msgInner}</div>`;
 }
 
 function renderMessages(scroll = true) {
@@ -396,26 +612,53 @@ function renderMessages(scroll = true) {
   const box = $('#messages');
   if (!chat) { box.innerHTML = ''; return; }
 
+  box.setAttribute('data-chat-type', chat.type || 'private');
+
   if (!chat.messages.length) {
-    box.innerHTML = `<div class="empty" style="margin:auto;padding:40px">
-      ${icon('chat', 52)}
-      <div class="ttl">شروع گفتگو</div>
-      اولین پیامت رو بنویس
-    </div>`;
+    const emptyHTML = chat.type === 'ai'
+      ? `<div class="empty" style="margin:auto;padding:40px">
+          ${icon('sparkle', 52)}
+          <div class="ttl">دستیار هوشمند پیسفون</div>
+          هر سوالی داری بپرس 👋
+        </div>`
+      : `<div class="empty" style="margin:auto;padding:40px">
+          ${icon('chat', 52)}
+          <div class="ttl">شروع گفتگو</div>
+          اولین پیامت رو بنویس
+        </div>`;
+    box.innerHTML = emptyHTML;
     return;
   }
 
   let html = '', lastDay = '';
-  chat.messages.forEach(m => {
+  chat.messages.forEach((m, i) => {
     const d = dayKey(m.ts);
     if (d !== lastDay) {
       html += `<div class="day-sep"><span>${fmtDay(m.ts)}</span></div>`;
       lastDay = d;
     }
-    html += msgHTML(chat, m);
+    const rawPrev = chat.messages[i - 1] || null;
+    const rawNext = chat.messages[i + 1] || null;
+    const prevAdj = (rawPrev && dayKey(rawPrev.ts) === dayKey(m.ts)) ? rawPrev : null;
+    const nextAdj = (rawNext && dayKey(rawNext.ts) === dayKey(m.ts)) ? rawNext : null;
+    html += msgHTML(chat, m, prevAdj, nextAdj);
   });
   if (chat.typing) {
-    html += `<div class="msg in typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+    const typingClass = chat.type === 'ai' ? ' in typing ai-thinking' : ' in typing';
+    if (chat.type === 'group' && chat.typingSender) {
+      const member = (chat.membersList || []).find(x => x.name === chat.typingSender);
+      const memberBg = member?.color || `hsl(${hashInt(chat.typingSender, 360)},70%,55%)`;
+      const memberContent = member?.avatar?.type === 'emoji' ? member.avatar.value : initials(chat.typingSender);
+      html += `<div class="msg-group-row">
+        <div class="msg-group-av" style="background:${memberBg}">${memberContent}</div>
+        <div class="msg-group-wrap">
+          <div class="msg-group-sender" style="color:${member?.color || 'var(--accent-hi)'}">${esc(chat.typingSender)}</div>
+          <div class="msg${typingClass}"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="msg${typingClass}"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+    }
   }
   box.innerHTML = html;
   if (scroll) requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
@@ -437,7 +680,6 @@ function renderChatHeader() {
   const statusEl = $('#chat-status');
   statusEl.textContent = chatStatus(c);
   statusEl.style.color = c.typing ? 'var(--green)' : '';
-  // ✅ editable برای گروه/کانال
   if (c.type === 'group' || c.type === 'channel') {
     statusEl.classList.add('editable');
   } else {
@@ -445,13 +687,14 @@ function renderChatHeader() {
   }
 }
 
-/* OPEN / CLOSE */
+/* ===================== OPEN / CLOSE ===================== */
 function openChat(id) {
   const c = getChat(id);
   if (!c) return;
   activeChatId = id;
   c.unread = 0;
   c.typing = false;
+  c.typingSender = null;
   replyToMsg = null;
   hideReplyBar();
   renderChatHeader();
@@ -471,7 +714,249 @@ function closeChat() {
   renderChatList();
 }
 
-/* SEND */
+/* ===================== INFO SCREEN ===================== */
+let infoChatId = null;
+
+function openInfo(id) {
+  const c = getChat(id);
+  if (!c) return;
+  infoChatId = id;
+  renderInfo();
+  $('#screen-info').classList.add('open');
+}
+function closeInfo() {
+  $('#screen-info').classList.remove('open');
+  infoChatId = null;
+}
+
+function renderInfo() {
+  const c = getChat(infoChatId);
+  if (!c) return;
+  const isGroupOrChannel = c.type === 'group' || c.type === 'channel';
+  const username = c.username || '';
+  const isPublic = !!c.isPublic;
+
+  $('#info-title').textContent = c.type === 'channel' ? 'اطلاعات کانال'
+    : c.type === 'group' ? 'اطلاعات گروه'
+    : c.type === 'ai' ? 'دستیار هوشمند'
+    : c.type === 'saved' ? 'پیام‌های ذخیره‌شده'
+    : 'اطلاعات مخاطب';
+
+  let badges = '';
+  if (isGroupOrChannel) {
+    badges += `<div class="info-badge ${isPublic ? 'public' : 'private'}" data-info-act="toggle-public">
+      ${isPublic ? icon('globe', 14) + ' عمومی' : icon('lock', 14) + ' خصوصی'}
+    </div>`;
+  }
+  if (c.verified) {
+    badges += `<div class="info-badge verified">${icon('verified', 14)} تأیید شده</div>`;
+  }
+
+  let stats = '';
+  if (isGroupOrChannel) {
+    stats = `<div class="info-stat editable" data-info-act="edit-members">
+      ${icon('users', 16)} <b>${(c.members || 0).toLocaleString('fa-IR')}</b> عضو
+    </div>`;
+  }
+  if (c.type === 'private') {
+    stats = `<div class="info-stat">${icon(c.online ? 'chat' : 'phone', 16)} ${c.online ? 'آنلاین' : 'آخرین بازدید به تازگی'}</div>`;
+  }
+  if (c.type === 'ai') {
+    stats = `<div class="info-stat">${icon(navigator.onLine ? 'sparkle' : 'chat', 16)} ${navigator.onLine ? 'آنلاین — پاسخ هوشمند' : 'آفلاین — پاسخ آماده'}</div>`;
+  }
+
+  // لیست اعضای گروه
+  let membersList = '';
+  if (c.type === 'group' && c.membersList && c.membersList.length) {
+    membersList = `
+      <div class="section-title">اعضای گروه (${c.membersList.length.toLocaleString('fa-IR')})</div>
+      <div class="group">
+        ${c.membersList.map((m, idx) => {
+          const av = m.avatar || { type: 'gradient', value: hashInt(m.name, AV_GRADS.length) };
+          const bg = av.type === 'emoji'
+            ? `background:linear-gradient(135deg,${AV_GRADS[hashInt(m.name, AV_GRADS.length)][0]},${AV_GRADS[hashInt(m.name, AV_GRADS.length)][1]})`
+            : `background:${m.color || 'var(--accent)'}`;
+          const content = av.type === 'emoji' ? av.value : initials(m.name);
+          return `<div class="row" style="cursor:default">
+            <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);${bg}">${content}</div>
+            <span class="r-text" style="font-weight:600;color:${m.color || 'var(--text)'}">${esc(m.name)}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  const usernameBlock = (isGroupOrChannel || c.type === 'private' || c.type === 'ai')
+    ? (username
+        ? `<div class="info-username" data-info-act="edit-username">@${esc(username)}</div>`
+        : `<div class="info-username empty" data-info-act="edit-username">+ افزودن آیدی</div>`)
+    : '';
+
+  const settingsGroup = (isGroupOrChannel || c.type === 'private') ? `
+    <div class="section-title">تنظیمات</div>
+    <div class="group">
+      <div class="row" data-info-act="edit-name">
+        <span class="r-icon">${icon('edit', 20)}</span>
+        <span class="r-text">نام</span>
+        <span class="r-val">${esc(c.name)}</span>
+        <span class="chev">${icon('chevron', 18)}</span>
+      </div>
+      <div class="row" data-info-act="edit-username">
+        <span class="r-icon">${icon('user', 20)}</span>
+        <span class="r-text">آیدی (یوزرنیم)</span>
+        <span class="r-val">${username ? '@' + esc(username) : '—'}</span>
+        <span class="chev">${icon('chevron', 18)}</span>
+      </div>
+      ${isGroupOrChannel ? `
+        <div class="row" data-info-act="toggle-public">
+          <span class="r-icon">${icon(isPublic ? 'globe' : 'lock', 20)}</span>
+          <span class="r-text">نوع گروه/کانال</span>
+          <span class="r-val">${isPublic ? 'عمومی' : 'خصوصی'}</span>
+          <span class="chev">${icon('chevron', 18)}</span>
+        </div>
+        <div class="row" data-info-act="edit-members">
+          <span class="r-icon">${icon('users', 20)}</span>
+          <span class="r-text">تعداد اعضا</span>
+          <span class="r-val">${(c.members || 0).toLocaleString('fa-IR')}</span>
+          <span class="chev">${icon('chevron', 18)}</span>
+        </div>
+      ` : ''}
+      <div class="row">
+        <span class="r-icon" style="background:linear-gradient(180deg,#3aa0ff,#0a84ff)">${icon('verified', 20)}</span>
+        <span class="r-text">تیک آبی</span>
+        <label class="switch"><input type="checkbox" id="info-verified-sw" ${c.verified ? 'checked' : ''}>
+        <span class="sl"></span></label>
+      </div>
+    </div>
+  ` : '';
+
+  $('#info-body').innerHTML = `
+    <div class="info-hero">
+      <div class="avatar big" id="info-avatar-btn" style="${avatarBgStyle(c)}">${avatarContent(c)}</div>
+      <div class="info-name">${esc(c.name)}${c.verified ? vfHTML(22) : ''}</div>
+      ${usernameBlock}
+      ${badges ? `<div class="info-badges">${badges}</div>` : ''}
+      ${stats}
+    </div>
+
+    ${settingsGroup}
+    ${membersList}
+
+    <div class="section-title">عملیات</div>
+    <div class="group">
+      <div class="row" data-info-act="toggle-mute">
+        <span class="r-icon">${icon(c.muted ? 'bell' : 'bell-off', 20)}</span>
+        <span class="r-text">${c.muted ? 'فعال کردن اعلان' : 'بی‌صدا کردن'}</span>
+      </div>
+      <div class="row" data-info-act="clear">
+        <span class="r-icon">${icon('trash', 20)}</span>
+        <span class="r-text">پاک کردن تاریخچه</span>
+      </div>
+      <div class="row" data-info-act="delete">
+        <span class="r-icon" style="background:linear-gradient(180deg,#ff6b6b,#e53935)">${icon('trash', 20)}</span>
+        <span class="r-text" style="color:var(--red)">حذف چت</span>
+      </div>
+    </div>
+
+    <div class="empty" style="padding:20px 40px 40px;font-size:12px;opacity:.55">
+      شناسه: ${esc(c.id)}<br>
+      ساخته شده در ${new Date(c.createdAt || Date.now()).toLocaleDateString('fa-IR')}
+    </div>
+  `;
+
+  const verifiedSw = $('#info-verified-sw');
+  if (verifiedSw) {
+    verifiedSw.addEventListener('change', () => {
+      c.verified = verifiedSw.checked;
+      renderInfo(); renderChatList(); renderChatHeader(); save();
+      toast(c.verified ? 'تیک آبی فعال شد' : 'تیک آبی غیرفعال شد');
+    });
+  }
+
+  $$('#info-body [data-info-act]').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.tagName === 'INPUT' || e.target.closest('label.switch')) return;
+      handleInfoAction(el.dataset.infoAct, c);
+    });
+  });
+
+  const avBtn = $('#info-avatar-btn');
+  if (avBtn) {
+    avBtn.addEventListener('click', () => {
+      avatarTargetType = 'chat';
+      avatarTarget = c.id;
+      renderAvatarPicker('gradient');
+      avatarOverlay.classList.add('show');
+    });
+  }
+}
+
+function handleInfoAction(act, c) {
+  if (act === 'edit-name') {
+    showPrompt('نام جدید', c.name, v => {
+      if (!v.trim()) return;
+      c.name = v.trim();
+      renderInfo(); renderChatList(); renderChatHeader(); save();
+      toast('نام تغییر کرد');
+    });
+    return;
+  }
+  if (act === 'edit-username') {
+    showPrompt('آیدی (بدون @)', c.username || '', v => {
+      let u = v.trim().replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      if (!u) { toast('آیدی نمی‌تونه خالی باشه'); return; }
+      if (u.length < 3) { toast('حداقل ۳ کاراکتر'); return; }
+      if (u.length > 32) { toast('حداکثر ۳۲ کاراکتر'); return; }
+      const dup = state.chats.find(x => x.id !== c.id && x.username === u);
+      if (dup) { toast('این آیدی قبلاً گرفته شده'); return; }
+      c.username = u;
+      renderInfo(); save();
+      toast('آیدی ذخیره شد: @' + u);
+    });
+    return;
+  }
+  if (act === 'toggle-public') {
+    c.isPublic = !c.isPublic;
+    renderInfo(); save();
+    toast(c.isPublic ? 'عمومی شد' : 'خصوصی شد');
+    return;
+  }
+  if (act === 'edit-members') {
+    showPrompt('تعداد اعضا', String(c.members || 0), v => {
+      const n = parseInt(v, 10);
+      if (isNaN(n) || n < 0) { toast('عدد معتبر وارد کن'); return; }
+      if (n > 9999999) { toast('حداکثر ۹٬۹۹۹٬۹۹۹'); return; }
+      c.members = n;
+      renderInfo(); renderChatHeader(); renderChatList(); save();
+      toast('تعداد اعضا تغییر کرد');
+    });
+    return;
+  }
+  if (act === 'toggle-mute') {
+    c.muted = !c.muted;
+    renderInfo(); save();
+    toast(c.muted ? 'بی‌صدا شد' : 'اعلان فعال شد');
+    return;
+  }
+  if (act === 'clear') {
+    showConfirm('پاک کردن تاریخچه', 'همه پیام‌های این چت حذف شوند؟', () => {
+      c.messages = [];
+      renderMessages(); renderInfo(); renderChatList(); save();
+      toast('تاریخچه پاک شد');
+    });
+    return;
+  }
+  if (act === 'delete') {
+    showConfirm('حذف چت', 'کل این چت حذف شود؟', () => {
+      state.chats = state.chats.filter(x => x.id !== c.id);
+      closeInfo(); closeChat(); renderChatList(); save();
+      toast('چت حذف شد');
+    });
+    return;
+  }
+}
+
+/* ===================== SEND ===================== */
 function sendMessage(extra = {}, textOverride) {
   const chat = getChat(activeChatId);
   if (!chat) return;
@@ -493,13 +978,120 @@ function sendMessage(extra = {}, textOverride) {
   setTimeout(() => { m.status = 'delivered'; if (activeChatId === chat.id) renderMessages(false); save(); }, 600);
   setTimeout(() => { m.status = 'read'; if (activeChatId === chat.id) renderMessages(false); save(); }, 1700);
 
-  if (state.settings.autoReply && chat.type !== 'saved' && chat.type !== 'channel') scheduleReply(chat);
+  if (chat.type === 'ai') {
+    if (state.settings.aiMode && navigator.onLine) {
+      scheduleAIReply(chat, m.text);
+    } else {
+      scheduleReply(chat);
+    }
+    return;
+  }
+
+  if (state.settings.autoReply && chat.type !== 'saved' && chat.type !== 'channel') {
+    if (state.settings.aiMode && navigator.onLine) {
+      // برای گروه و خصوصی: AI با پروفایل جواب می‌ده
+      scheduleAIReply(chat, m.text);
+    } else {
+      scheduleReply(chat);
+    }
+  }
 }
 
-/* AUTO REPLY */
-const REPLIES = ['باشه 👍','چه جالب!','الان چک می‌کنم','مرسی 🙏','کاملاً موافقم',
+/* ===================== AI REPLY (تک چت + گروه) ===================== */
+async function scheduleAIReply(chat, userMsg) {
+  const c = getChat(chat.id);
+  if (!c) return;
+
+  await new Promise(r => setTimeout(r, 500 + Math.random() * 600));
+
+  // === گروه ===
+  if (chat.type === 'group') {
+    const members = c.membersList || [];
+    if (!members.length) return;
+
+    // ۱ یا ۲ عضو تصادفی جواب می‌دن
+    const numRepliers = Math.random() > 0.5 ? 2 : 1;
+    const shuffled = members.slice().sort(() => Math.random() - 0.5);
+    const repliers = shuffled.slice(0, Math.min(numRepliers, members.length));
+
+    for (let i = 0; i < repliers.length; i++) {
+      const member = repliers[i];
+      if (i > 0) await new Promise(r => setTimeout(r, 1400 + Math.random() * 1800));
+
+      c.typing = true;
+      c.typingSender = member.name;
+      if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
+      save();
+
+      const history = c.messages
+        .filter(x => x.type === 'text')
+        .slice(-6)
+        .map(x => ({ out: x.out, text: x.text, sender: x.sender }));
+
+      // پرامپت مخصوص این عضو
+      const memberPrompt = `تو الان نقش «${member.name}» رو داری، یکی از اعضای گروه چت دوستانه «${c.name}» هستی. ` +
+        `جواب‌ها رو کوتاه (حداکثر ۲ خط)، فارسی خودمونی و دوستانه بده. از ایموجی به‌اندازه استفاده کن.`;
+
+      let replyText = await fetchAIReply(userMsg, history, memberPrompt);
+
+      if (!replyText) {
+        replyText = ['😄','👌','موافقم','دمت گرم','باشه حتماً','چه جالب!',
+          'منم همینطور','عالیه!','😂','🚀'][Math.floor(Math.random() * 10)];
+      }
+
+      c.typing = false;
+      c.typingSender = null;
+      c.messages.push({
+        id: rid(), text: replyText, out: false, ts: Date.now(),
+        type: 'text', replyTo: null,
+        sender: member.name,
+        color: member.color
+      });
+      if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
+      if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
+      renderChatList();
+      save();
+      if (state.settings.sounds) beep();
+    }
+    return;
+  }
+
+  // === چت خصوصی / AI ===
+  c.typing = true;
+  if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
+  save();
+
+  const history = c.messages
+    .filter(x => x.type === 'text')
+    .slice(-8, -1);
+
+  let replyText = await fetchAIReply(userMsg, history);
+
+  if (!replyText) {
+    replyText = REPLIES[Math.floor(Math.random() * REPLIES.length)];
+    if (chat.type === 'ai') {
+      replyText = '⚠️ اتصال به هوش مصنوعی ممکن نشد.\n' + replyText;
+    }
+  }
+
+  c.typing = false;
+  c.messages.push({
+    id: rid(), text: replyText, out: false, ts: Date.now(),
+    type: 'text', replyTo: null, sender: null, color: null
+  });
+  if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
+  if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
+  renderChatList();
+  save();
+  if (state.settings.sounds) beep();
+}
+
+/* ===================== LOCAL AUTO REPLY ===================== */
+const REPLIES = [
+  'باشه 👍','چه جالب!','الان چک می‌کنم','مرسی 🙏','کاملاً موافقم',
   'بعداً حرف می‌زنیم','عالیه!','دقیقاً','ممنون از پیامت','می‌شه بیشتر توضیح بدی؟',
-  'حتماً چشم','من هم همین فکر رو می‌کردم','خبر خوبیه!'];
+  'حتماً چشم','من هم همین فکر رو می‌کردم','خبر خوبیه!','🤔','😄'
+];
 
 function scheduleReply(chat) {
   setTimeout(() => {
@@ -511,13 +1103,17 @@ function scheduleReply(chat) {
     setTimeout(() => {
       c.typing = false;
       const isGroup = c.type === 'group';
-      const sender = isGroup && c.memberNames?.length
-        ? c.memberNames[Math.floor(Math.random() * c.memberNames.length)] : null;
-      const g = AV_GRADS[Math.floor(Math.random() * AV_GRADS.length)];
+      let sender = null, color = null;
+      if (isGroup && c.membersList?.length) {
+        const member = c.membersList[Math.floor(Math.random() * c.membersList.length)];
+        sender = member.name;
+        color = member.color;
+        c.typingSender = null;
+      }
       c.messages.push({
         id: rid(), text: REPLIES[Math.floor(Math.random() * REPLIES.length)],
         out: false, ts: Date.now(), type: 'text', replyTo: null,
-        sender, color: sender ? g[0] : null
+        sender, color
       });
       if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
@@ -528,30 +1124,34 @@ function scheduleReply(chat) {
   }, 800 + Math.random() * 1400);
 }
 
-/* AMBIENT */
+/* ===================== AMBIENT ===================== */
 const AMBIENT = ['سلام، هستی؟','یه چیزی پیدا کردم','خبر جدید داری؟','فردا ساعت چند بریم؟',
   'عکس‌ها رو دیدی؟','یادت نره فردا جلسه داریم','اینو حتماً ببین','دمت گرم'];
 
 setInterval(() => {
   if (!state.settings.autoIncoming) return;
-  const cands = state.chats.filter(c => c.type !== 'saved' && c.type !== 'channel');
+  const cands = state.chats.filter(c =>
+    c.type !== 'saved' && c.type !== 'channel' && c.type !== 'ai');
   if (!cands.length) return;
   const c = cands[Math.floor(Math.random() * cands.length)];
   const isGroup = c.type === 'group';
-  const sender = isGroup && c.memberNames?.length
-    ? c.memberNames[Math.floor(Math.random() * c.memberNames.length)] : null;
-  const g = AV_GRADS[Math.floor(Math.random() * AV_GRADS.length)];
+  let sender = null, color = null;
+  if (isGroup && c.membersList?.length) {
+    const member = c.membersList[Math.floor(Math.random() * c.membersList.length)];
+    sender = member.name;
+    color = member.color;
+  }
   c.messages.push({
     id: rid(), text: AMBIENT[Math.floor(Math.random() * AMBIENT.length)],
     out: false, ts: Date.now(), type: 'text', replyTo: null,
-    sender, color: sender ? g[0] : null
+    sender, color
   });
   if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
   if (activeChatId === c.id) renderMessages();
   renderChatList(); save();
 }, 40000);
 
-/* BEEP */
+/* ===================== BEEP ===================== */
 let audioCtx = null;
 function beep() {
   try {
@@ -566,7 +1166,7 @@ function beep() {
   } catch {}
 }
 
-/* COMPOSER */
+/* ===================== COMPOSER ===================== */
 const inputEl = $('#msg-input');
 const sendBtn = $('#btn-send');
 function autoGrow() {
@@ -588,7 +1188,7 @@ sendBtn.addEventListener('click', () => {
   else toast('برای ضبط صدا، دکمه را نگه دار');
 });
 
-/* VOICE */
+/* ===================== VOICE ===================== */
 let recInterval = null, recStart = 0, recActive = false;
 sendBtn.addEventListener('pointerdown', e => {
   if (inputEl.value.trim()) return;
@@ -621,7 +1221,7 @@ function stopRec(cancel) {
 }
 $('#rec-cancel').addEventListener('click', () => stopRec(true));
 
-/* REPLY BAR */
+/* ===================== REPLY BAR ===================== */
 function showReplyBar(m) {
   replyToMsg = m.id;
   const chat = getChat(activeChatId);
@@ -632,7 +1232,7 @@ function showReplyBar(m) {
 }
 function hideReplyBar() { $('#reply-bar').classList.remove('show'); }
 
-/* PLAY VOICE */
+/* ===================== PLAY VOICE ===================== */
 $('#messages').addEventListener('click', e => {
   const btn = e.target.closest('.vplay');
   if (!btn) return;
@@ -653,7 +1253,7 @@ $('#messages').addEventListener('click', e => {
   }, (m.dur || 3) * 1000);
 });
 
-/* LONG PRESS */
+/* ===================== LONG PRESS ===================== */
 let pressTimer = null, pressStart = null, pressedMsgEl = null;
 $('#messages').addEventListener('pointerdown', e => {
   const el = e.target.closest('.msg');
@@ -742,7 +1342,7 @@ function handleMsgAction(act, chat, m) {
   }
 }
 
-/* OVERLAYS */
+/* ===================== OVERLAYS ===================== */
 const sheetOverlay = $('#sheet-overlay');
 const emojiOverlay = $('#emoji-overlay');
 const avatarOverlay = $('#avatar-overlay');
@@ -755,7 +1355,7 @@ function openSheet(html) {
 function closeSheet() { sheetOverlay.classList.remove('show'); }
 sheetOverlay.addEventListener('click', e => { if (e.target === sheetOverlay) closeSheet(); });
 
-/* AVATAR PICKER */
+/* ===================== AVATAR PICKER ===================== */
 let avatarTarget = null;
 let avatarTargetType = null;
 
@@ -883,6 +1483,7 @@ function applyAvatarChange() {
   } else if (avatarTargetType === 'chat') {
     renderChatList();
     if (activeChatId === avatarTarget) renderChatHeader();
+    if (infoChatId === avatarTarget) renderInfo();
   } else if (avatarTargetType === 'contact') {
     renderContacts();
   }
@@ -908,32 +1509,108 @@ function applyAvatarChange() {
   toast('ذخیره شد');
 }
 
-/* EMOJI */
-const EMOJIS = [
-  '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰',
-  '😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏',
-  '😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠',
-  '😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥',
-  '❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','❣️','💕','💞','💓','💗','💖','💘',
-  '👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐',
-  '🎉','🎊','🎈','🎁','🔥','✨','⭐','🌟','💫','⚡','💥','💯','✅','❌','⚠️','❓'
-];
-function openEmoji() {
-  if (!$('#emoji-panel').innerHTML) {
-    $('#emoji-panel').innerHTML =
-      `<div class="emoji-grid">${EMOJIS.map(e => `<button data-emoji="${e}">${e}</button>`).join('')}</div>`;
-    $$('#emoji-panel [data-emoji]').forEach(b =>
-      b.addEventListener('click', () => {
-        inputEl.value += b.dataset.emoji;
-        autoGrow(); updateSendBtn();
-      }));
+/* ===================== EMOJI PICKER ===================== */
+const EMOJI_CATEGORIES = {
+  smileys: {
+    name: 'شکلک‌ها', icon: '😀',
+    emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥺','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥱','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖']
+  },
+  gestures: {
+    name: 'اشاره‌ها', icon: '👍',
+    emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','💋']
+  },
+  hearts: {
+    name: 'قلب و عشق', icon: '❤️',
+    emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💌','💋','😍','🥰','😘','💑','💏','👩‍❤️‍👨','👨‍❤️‍👨','👩‍❤️‍👩','💐','🌹','🌷','🌺','🌸','🎁','✨','💫','⭐','🌟','🌙','☀️','🌈']
+  },
+  animals: {
+    name: 'حیوانات', icon: '🐶',
+    emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🕸️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔']
+  },
+  food: {
+    name: 'غذا', icon: '🍔',
+    emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾','🧊']
+  },
+  travel: {
+    name: 'سفر', icon: '✈️',
+    emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🛴','🚲','🛵','🏍️','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','💺','🛰️','🚀','🛸','🚁','🛶','⛵','🚤','🛥️','🛳️','⛴️','🚢','⚓','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺','🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️','🌅','🌄','🌠','🎇','🎆','🌇','🌆','🏙️','🌃','🌌','🌉','🌁']
+  },
+  activities: {
+    name: 'فعالیت‌ها', icon: '⚽',
+    emojis: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🎻','🎲','🎯','🎳','🎮','🎰','🧩']
+  },
+  objects: {
+    name: 'اشیا', icon: '💡',
+    emojis: ['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','🕹️','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🎙️','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🛢️','💸','💵','💴','💶','💷','🪙','💰','💳','💎','⚖️','🧰','🔧','🔨','🛠️','⛏️','🔩','⚙️','🧱','⛓️','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🩹','🩺','💊','💉','🧬','🦠','🧪','🌡️','🧹','🧺','🧻','🚽','🚰','🚿','🛁','🧼','🪥','🪒','🧽','🧴','🛎️','🔑','🗝️','🚪','🪑','🛋️','🛏️','🧸','🖼️','🛍️','🛒','🎁','🎈','🎏','🎀','🎊','🎉','🏮','🎐','🧧','✉️','📩','📨','📧','💌','📥','📤','📦','🏷️','📪','📫','📬','📭','📮','📜','📃','📄','📑','🧾','📊','📈','📉','📆','📅','🗑️','📋','📁','📂','📰','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🔗','📎','📐','📏','📌','📍','✂️','🖊️','🖋️','✒️','🖌️','🖍️','📝','✏️','🔍','🔎','🔏','🔐','🔒','🔓']
+  },
+  symbols: {
+    name: 'نمادها', icon: '💯',
+    emojis: ['☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🚹','🚺','🚼','🚻','🚮','🎦','📶','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','▶️','⏸️','⏯️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♦️','🃏','🎴','🀄','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛']
+  },
+  flags: {
+    name: 'پرچم‌ها', icon: '🏁',
+    emojis: ['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏴‍☠️','🇮🇷','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇷🇺','🇨🇳','🇯🇵','🇰🇷','🇮🇳','🇹🇷','🇸🇦','🇦🇪','🇮🇶','🇵🇰','🇦🇫','🇪🇬','🇧🇷','🇨🇦','🇦🇺','🇲🇽','🇳🇱','🇧🇪','🇸🇪','🇳🇴','🇩🇰','🇫🇮','🇵🇱','🇺🇦','🇬🇷','🇵🇹','🇨🇭','🇦🇹','🇮🇪','🇳🇿','🇿🇦','🇦🇷','🇨🇱','🇨🇴','🇵🇪','🇻🇪','🇺🇾','🇵🇾','🇧🇴','🇪🇨']
   }
+};
+
+let emojiActiveCat = 'smileys';
+
+function openEmoji() {
+  if (!$('#emoji-panel').innerHTML) renderEmojiPanel();
   emojiOverlay.classList.add('show');
 }
+
+function renderEmojiPanel() {
+  const cats = Object.keys(EMOJI_CATEGORIES);
+  const panel = $('#emoji-panel');
+  panel.innerHTML = `
+    <div class="emoji-cats" id="emoji-cats">
+      ${cats.map(k => `
+        <button data-cat="${k}" class="${k === emojiActiveCat ? 'active' : ''}">
+          ${EMOJI_CATEGORIES[k].icon}
+        </button>`).join('')}
+    </div>
+    <div class="emoji-scroll" id="emoji-scroll">
+      <div class="cat-title" id="emoji-cat-title">${EMOJI_CATEGORIES[emojiActiveCat].name}</div>
+      <div class="emoji-grid" id="emoji-grid">
+        ${EMOJI_CATEGORIES[emojiActiveCat].emojis.map(e => `<button data-emoji="${e}">${e}</button>`).join('')}
+      </div>
+    </div>
+  `;
+
+  $$('#emoji-cats [data-cat]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      emojiActiveCat = btn.dataset.cat;
+      $$('#emoji-cats [data-cat]').forEach(b =>
+        b.classList.toggle('active', b.dataset.cat === emojiActiveCat));
+      const scroll = $('#emoji-scroll');
+      scroll.innerHTML = `
+        <div class="cat-title">${EMOJI_CATEGORIES[emojiActiveCat].name}</div>
+        <div class="emoji-grid">
+          ${EMOJI_CATEGORIES[emojiActiveCat].emojis.map(e => `<button data-emoji="${e}">${e}</button>`).join('')}
+        </div>
+      `;
+      scroll.scrollTop = 0;
+      bindEmojiClicks(scroll);
+    });
+  });
+
+  bindEmojiClicks($('#emoji-scroll'));
+}
+
+function bindEmojiClicks(scope) {
+  $$('[data-emoji]', scope).forEach(b => {
+    b.addEventListener('click', () => {
+      inputEl.value += b.dataset.emoji;
+      autoGrow(); updateSendBtn();
+    });
+  });
+}
+
 $('#btn-emoji').addEventListener('click', openEmoji);
 emojiOverlay.addEventListener('click', e => { if (e.target === emojiOverlay) emojiOverlay.classList.remove('show'); });
 
-/* ATTACH */
+/* ===================== ATTACH ===================== */
 $('#btn-attach').addEventListener('click', () => {
   openSheet(`
     <div class="sheet-title">پیوست</div>
@@ -952,7 +1629,7 @@ $('#btn-attach').addEventListener('click', () => {
   }));
 });
 
-/* CHAT MENU */
+/* ===================== CHAT MENU ===================== */
 $('#btn-chat-menu').addEventListener('click', () => {
   const c = getChat(activeChatId);
   if (!c) return;
@@ -961,6 +1638,7 @@ $('#btn-chat-menu').addEventListener('click', () => {
     : '';
   openSheet(`
     <div class="sheet-title">${esc(c.name)}</div>
+    <div class="sheet-item" data-cact="info">${icon('user')}اطلاعات چت</div>
     <div class="sheet-item" data-cact="avatar">${icon('image')}تنظیم پروفایل</div>
     <div class="sheet-item" data-cact="verified">${icon('verified')}${c.verified ? 'برداشتن تیک آبی' : 'دادن تیک آبی'}</div>
     <div class="sheet-item" data-cact="rename">${icon('edit')}تغییر نام</div>
@@ -974,6 +1652,7 @@ $('#btn-chat-menu').addEventListener('click', () => {
     const act = b.dataset.cact;
     closeSheet();
     setTimeout(() => {
+      if (act === 'info') { openInfo(c.id); return; }
       if (act === 'avatar') { openAvatarPicker('chat', c.id); return; }
       if (act === 'verified') {
         c.verified = !c.verified;
@@ -1014,25 +1693,19 @@ $('#btn-chat-menu').addEventListener('click', () => {
   }));
 });
 
-/* CALL */
+/* ===================== CALL ===================== */
 $('#btn-call').addEventListener('click', () => toast('در نسخه آفلاین پشتیبانی نمی‌شود'));
 
-/* ✅ کلیک روی «X عضو» در هدر → تغییر تعداد اعضا */
-$('#chat-status').addEventListener('click', () => {
-  const c = getChat(activeChatId);
-  if (!c) return;
-  if (c.type !== 'group' && c.type !== 'channel') return;
-  showPrompt('تعداد اعضا', String(c.members || 0), v => {
-    const n = parseInt(v, 10);
-    if (isNaN(n) || n < 0) { toast('عدد معتبر وارد کن'); return; }
-    if (n > 9999999) { toast('حداکثر ۹٬۹۹۹٬۹۹۹'); return; }
-    c.members = n;
-    renderChatHeader(); renderChatList(); save();
-    toast('تعداد اعضا تغییر کرد');
-  });
+$('#chat-name').addEventListener('click', () => {
+  if (!activeChatId) return;
+  openInfo(activeChatId);
+});
+$('#chat-avatar').addEventListener('click', () => {
+  if (!activeChatId) return;
+  openInfo(activeChatId);
 });
 
-/* TABS */
+/* ===================== TABS ===================== */
 $$('.tabbar button').forEach(btn => btn.addEventListener('click', () => {
   $$('.tabbar button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -1047,7 +1720,7 @@ $$('.tabbar button').forEach(btn => btn.addEventListener('click', () => {
   if (tab === 'settings') renderSettings();
 }));
 
-/* SEARCH */
+/* ===================== SEARCH ===================== */
 $('#btn-search-toggle').addEventListener('click', () => {
   const sb = $('#searchbar');
   const open = sb.style.display === 'none';
@@ -1057,7 +1730,7 @@ $('#btn-search-toggle').addEventListener('click', () => {
 });
 $('#search-input').addEventListener('input', renderChatList);
 
-/* NAV */
+/* ===================== NAV ===================== */
 $('#btn-back').addEventListener('click', closeChat);
 $('#btn-menu-list').addEventListener('click', () => toast('به‌زودی…'));
 
@@ -1076,6 +1749,7 @@ $('#contacts-list').addEventListener('click', e => {
     chat = {
       id: c.id, name: c.name, type: 'private',
       avatar: c.avatar, verified: c.verified,
+      username: '',
       online: Math.random() > .5,
       unread: 0, pinned: false, muted: false, messages: [], createdAt: Date.now()
     };
@@ -1084,7 +1758,20 @@ $('#contacts-list').addEventListener('click', e => {
   openChat(chat.id);
 });
 
-/* NEW CHAT */
+$('#btn-info-back').addEventListener('click', () => {
+  closeInfo();
+  renderChatList();
+});
+$('#btn-info-edit').addEventListener('click', () => {
+  const c = getChat(infoChatId);
+  if (!c) return;
+  avatarTargetType = 'chat';
+  avatarTarget = c.id;
+  renderAvatarPicker('gradient');
+  avatarOverlay.classList.add('show');
+});
+
+/* ===================== NEW CHAT ===================== */
 $('#fab-new').addEventListener('click', () => {
   openSheet(`
     <div class="sheet-title">گفتگوی جدید</div>
@@ -1113,19 +1800,25 @@ function promptChatName(type) {
     const data = {
       name, type,
       avatar: { type: 'gradient', value: hashInt(name, AV_GRADS.length) },
-      verified: false
+      verified: false,
+      username: '',
+      isPublic: type === 'channel'
     };
     if (type === 'private') { data.online = true; }
 
-    // ✅ برای گروه و کانال، تعداد اعضا رو بپرس
     if (type === 'group' || type === 'channel') {
-      const defaultCount = type === 'group' ? '3' : '100';
+      const defaultCount = type === 'group' ? '4' : '100';
       setTimeout(() => {
         showPrompt('تعداد اعضا', defaultCount, num => {
           const n = parseInt(num, 10);
-          data.members = (isNaN(n) || n < 0) ? 0 : Math.min(n, 9999999);
-          if (type === 'group') data.memberNames = [];
-          finishCreateChat(data, type);
+          const count = (isNaN(n) || n < 0) ? 0 : Math.min(n, 9999999);
+          data.members = count;
+          // برای گروه: تولید اعضا از pool
+          if (type === 'group') {
+            const shuffled = GROUP_MEMBER_POOL.slice().sort(() => Math.random() - 0.5);
+            data.membersList = shuffled.slice(0, Math.min(count, shuffled.length)).map(m => ({ ...m }));
+          }
+          setTimeout(() => askPublicOrPrivate(data, type), 200);
         });
       }, 220);
       return;
@@ -1133,6 +1826,44 @@ function promptChatName(type) {
 
     finishCreateChat(data, type);
   });
+}
+
+function askPublicOrPrivate(data, type) {
+  openSheet(`
+    <div class="sheet-title">${type === 'channel' ? 'کانال' : 'گروه'} شما چه نوعی باشد؟</div>
+    <div class="sheet-item" data-pp="public">
+      ${icon('globe')}
+      <div style="flex:1">
+        <div style="font-weight:600">عمومی</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">هر کسی می‌تواند پیدا کند</div>
+      </div>
+    </div>
+    <div class="sheet-item" data-pp="private">
+      ${icon('lock')}
+      <div style="flex:1">
+        <div style="font-weight:600">خصوصی</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">فقط با دعوت‌نامه</div>
+      </div>
+    </div>
+  `);
+  $$('#sheet-content [data-pp]').forEach(b => b.addEventListener('click', () => {
+    data.isPublic = b.dataset.pp === 'public';
+    closeSheet();
+    if (data.isPublic) {
+      setTimeout(() => {
+        showPrompt('آیدی عمومی (بدون @)', '', v => {
+          let u = v.trim().replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+          if (u && u.length >= 3 && u.length <= 32) {
+            const dup = state.chats.find(x => x.username === u);
+            if (!dup) data.username = u;
+          }
+          finishCreateChat(data, type);
+        });
+      }, 220);
+    } else {
+      finishCreateChat(data, type);
+    }
+  }));
 }
 
 function finishCreateChat(data, type) {
@@ -1158,7 +1889,7 @@ function createChat(data) {
   setTimeout(() => openChat(chat.id), 200);
 }
 
-/* SETTINGS */
+/* ===================== SETTINGS ===================== */
 $('#settings-body').addEventListener('click', e => {
   const row = e.target.closest('[data-act]');
   if (row) {
@@ -1214,8 +1945,13 @@ $('#settings-body').addEventListener('click', e => {
 
   const sw = e.target.closest('input[data-set]');
   if (sw) {
-    state.settings[sw.dataset.set] = sw.checked;
+    const key = sw.dataset.set;
+    state.settings[key] = sw.checked;
     save();
+    if (key === 'aiMode') {
+      toast(sw.checked ? 'پاسخ هوشمند فعال شد ✨' : 'پاسخ هوشمند غیرفعال شد');
+      if (activeChatId) renderChatHeader();
+    }
   }
   const meSw = e.target.closest('input[data-me]');
   if (meSw) {
@@ -1226,7 +1962,7 @@ $('#settings-body').addEventListener('click', e => {
   }
 });
 
-/* MODAL */
+/* ===================== MODAL ===================== */
 function showPrompt(title, value, onOk) {
   const box = $('#modal-box');
   box.innerHTML = `<h3>${esc(title)}</h3>
@@ -1259,24 +1995,76 @@ modalOverlay.addEventListener('click', e => {
   if (e.target === modalOverlay) modalOverlay.classList.remove('show');
 });
 
-/* ESC */
+/* ===================== ESC ===================== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (sheetOverlay.classList.contains('show')) closeSheet();
     else if (emojiOverlay.classList.contains('show')) emojiOverlay.classList.remove('show');
     else if (avatarOverlay.classList.contains('show')) closeAvatarPicker();
     else if (modalOverlay.classList.contains('show')) modalOverlay.classList.remove('show');
+    else if ($('#screen-info').classList.contains('open')) closeInfo();
     else if ($('#screen-chat').classList.contains('open')) closeChat();
   }
 });
 
-/* INIT */
-/* ✅ علامت‌گذاری همه پیام‌های موجود به عنوان دیده‌شده (جلوگیری از انیمیشن مجدد) */
+/* ===================== SPLASH + UPDATE ===================== */
+function hideSplash() {
+  const s = $('#splash');
+  if (!s) return;
+  setTimeout(() => {
+    s.classList.add('hide');
+    setTimeout(() => s.remove(), 700);
+  }, 1500);
+}
+
+function showUpdateNotification() {
+  const overlay = $('#update-overlay');
+  if (!overlay) return;
+  const cl = $('#update-changelog');
+  cl.innerHTML = CHANGELOG.map((item, i) => `
+    <div class="cl-item">
+      <span class="cl-num">${i + 1}</span>
+      <span class="cl-text">${esc(item)}</span>
+    </div>
+  `).join('');
+  $('#update-version').textContent = APP_VERSION;
+  setTimeout(() => overlay.classList.add('show'), 2200);
+  $('#update-ok').addEventListener('click', () => {
+    overlay.classList.remove('show');
+    try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch {}
+    setTimeout(() => { overlay.style.display = 'none'; }, 400);
+  });
+}
+
+function checkVersionAndNotify() {
+  let savedVersion = null;
+  try { savedVersion = localStorage.getItem(VERSION_KEY); } catch {}
+  if (savedVersion !== APP_VERSION) {
+    showUpdateNotification();
+  } else {
+    const overlay = $('#update-overlay');
+    if (overlay) overlay.remove();
+  }
+}
+
+/* ===================== INIT ===================== */
 state.chats.forEach(c => c.messages.forEach(m => renderedMsgIds.add(m.id)));
 
 renderChatList();
 renderContacts();
 renderSettings();
+
+hideSplash();
+checkVersionAndNotify();
+
+window.addEventListener('online', () => {
+  if (activeChatId) renderChatHeader();
+  renderChatList();
+});
+window.addEventListener('offline', () => {
+  if (activeChatId) renderChatHeader();
+  renderChatList();
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
