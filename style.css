@@ -1,5 +1,5 @@
 /* =========================================================
-   پیسفون v1.12 — Modern 2025
+   پیسفون v1.12
    ========================================================= */
 
 :root{
@@ -224,40 +224,23 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:0;
   padding:0;
 }
-.logo-svg{
-  width:26px;
-  height:26px;
-  flex-shrink:0;
-  animation:logoPulse 2.5s ease-in-out infinite;
-  filter:drop-shadow(0 0 10px rgba(59,130,246,.6));
-}
 .logo-text{
-  font-size:18px;
+  font-size:19px;
   font-weight:800;
-  letter-spacing:-.4px;
-  background:linear-gradient(90deg,#60a5fa 0%,#a78bfa 40%,#60a5fa 80%,#60a5fa 100%);
-  background-size:250% 100%;
+  letter-spacing:-.5px;
+  background:linear-gradient(90deg,#60a5fa 0%,#a78bfa 50%,#60a5fa 100%);
+  background-size:200% 100%;
   -webkit-background-clip:text;
   background-clip:text;
   -webkit-text-fill-color:transparent;
-  animation:logoShimmer 3.5s linear infinite;
-}
-@keyframes logoPulse{
-  0%,100%{
-    transform:scale(1) rotate(0deg);
-    filter:drop-shadow(0 0 10px rgba(59,130,246,.5));
-  }
-  50%{
-    transform:scale(1.14) rotate(-4deg);
-    filter:drop-shadow(0 0 20px rgba(59,130,246,1));
-  }
+  animation:logoShimmer 3s linear infinite;
 }
 @keyframes logoShimmer{
   0%{background-position:0% 50%}
-  100%{background-position:250% 50%}
+  100%{background-position:200% 50%}
 }
 
 /* ===== TAB BODY ===== */
@@ -265,7 +248,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   flex:1;min-height:0;
   overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
-  padding:0 8px calc(90px + env(safe-area-inset-bottom, 0px));
+  padding:0 8px calc(48px + env(safe-area-inset-bottom, 0px));
   overscroll-behavior:contain;
 }
 .tab-body.hidden{display:none}
@@ -362,8 +345,8 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .fab{
   position:fixed;
   left:18px;
-  bottom:calc(75px + env(safe-area-inset-bottom,0px));
-  width:58px;height:58px;border-radius:50%;
+  bottom:calc(52px + env(safe-area-inset-bottom,0px));
+  width:54px;height:54px;border-radius:50%;
   background:linear-gradient(180deg,#60a5fa,#3b82f6);
   color:#fff;
   box-shadow:
@@ -376,9 +359,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .fab:active{transform:scale(.88)}
 .fab svg{fill:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 
-/* =========================================================
-   TABBAR — آیکون‌ها چسبیده به لبه پایین
-   ========================================================= */
+/* ===== TABBAR (کوچک‌شده) ===== */
 .tabbar{
   position:fixed;
   bottom:0;
@@ -402,10 +383,9 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   flex-direction:column;
   align-items:center;
   justify-content:flex-end;
-  gap:3px;
-  padding:6px 0 4px;
-  padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 4px);
-  font-size:10.5px;
+  gap:1px;
+  padding:4px 0 6px;
+  font-size:9px;
   font-weight:600;
   color:rgba(255,255,255,.38);
   background:transparent!important;
@@ -418,23 +398,23 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   fill:none;
   stroke:currentColor;
   transition:transform .2s;
-  width:26px;
-  height:26px;
+  width:20px;
+  height:20px;
 }
 .tabbar button.active{
   color:var(--accent-2);
 }
 .tabbar button.active svg{
-  transform:scale(1.1);
-  filter:drop-shadow(0 2px 8px rgba(59,130,246,.5));
+  transform:scale(1.08);
+  filter:drop-shadow(0 2px 6px rgba(59,130,246,.5));
 }
 .tabbar button.active::after{
   content:"";
   position:absolute;
-  top:2px;
-  width:22px;height:2.5px;border-radius:2px;
+  top:1px;
+  width:16px;height:2px;border-radius:2px;
   background:linear-gradient(90deg,#60a5fa,#3b82f6);
-  box-shadow:0 0 12px rgba(59,130,246,.8);
+  box-shadow:0 0 10px rgba(59,130,246,.8);
 }
 
 /* ===== MESSAGES ===== */
@@ -727,7 +707,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .switch input:checked + .sl:before{transform:translateX(-20px)}
 .switch.purple input:checked + .sl{background:linear-gradient(180deg,#a78bfa,#8b5cf6)}
 
-#toast{position:fixed;bottom:calc(108px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,40,.96);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--line-2);color:#fff;padding:12px 22px;border-radius:var(--r-pill);font-size:13.5px;z-index:200;opacity:0;pointer-events:none;transition:.3s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;font-weight:600;box-shadow:var(--sh-3);}
+#toast{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,40,.96);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--line-2);color:#fff;padding:12px 22px;border-radius:var(--r-pill);font-size:13.5px;z-index:200;opacity:0;pointer-events:none;transition:.3s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;font-weight:600;box-shadow:var(--sh-3);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .empty{text-align:center;color:var(--text-3);font-size:13.5px;padding:60px 40px;line-height:1.8;}
@@ -766,9 +746,9 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 /* Landscape */
 @media (orientation: landscape) and (max-height: 500px) {
   .hdr { min-height: 44px; padding-top: max(env(safe-area-inset-top, 0px), 4px); padding-bottom: 4px; }
-  .tabbar button { padding: 4px 0 3px; font-size: 9.5px; }
-  .tabbar button svg { width: 22px; height: 22px; }
-  .fab { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); width: 50px; height: 50px; }
+  .tabbar button { padding: 3px 0 4px; font-size: 8.5px; }
+  .tabbar button svg { width: 18px; height: 18px; }
+  .fab { bottom: calc(46px + env(safe-area-inset-bottom, 0px)); width: 50px; height: 50px; }
 }
 
 @media (max-width: 1024px) {
