@@ -11,6 +11,27 @@ const KEY = 'pisfon_v3';
 const COLOR_FIX_KEY = 'pisfon_color_fix_v1';
 
 /* =========================================================
+   VIEWPORT FIX — هر گوشی، هر سایز
+   ========================================================= */
+function setViewport() {
+  const h = window.innerHeight;
+  const w = window.innerWidth;
+  const root = document.documentElement;
+  root.style.setProperty('--vh', (h * 0.01) + 'px');
+  root.style.setProperty('--vw', (w * 0.01) + 'px');
+  root.style.setProperty('--app-h', h + 'px');
+}
+setViewport();
+window.addEventListener('resize', setViewport);
+window.addEventListener('orientationchange', () => setTimeout(setViewport, 200));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setViewport);
+  window.visualViewport.addEventListener('scroll', setViewport);
+}
+document.addEventListener('focusin', () => setTimeout(setViewport, 300));
+document.addEventListener('focusout', () => setTimeout(setViewport, 300));
+
+/* =========================================================
    FULLSCREEN + ORIENTATION LOCK
    ========================================================= */
 let _fsOnce = false;
@@ -78,34 +99,12 @@ document.addEventListener('contextmenu', e => {
   }
 });
 
-document.body && document.body.addEventListener('touchmove', e => {
-  if (e.target === document.body) e.preventDefault();
-}, { passive: false });
-
-/* ===================== VIEWPORT FIX ===================== */
-function setViewport() {
-  const h = window.innerHeight;
-  const w = window.innerWidth;
-  const root = document.documentElement;
-  root.style.setProperty('--vh', (h * 0.01) + 'px');
-  root.style.setProperty('--vw', (w * 0.01) + 'px');
-  root.style.setProperty('--app-h', h + 'px');
-}
-setViewport();
-window.addEventListener('resize', setViewport);
-window.addEventListener('orientationchange', () => setTimeout(setViewport, 200));
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', setViewport);
-  window.visualViewport.addEventListener('scroll', setViewport);
-}
-document.addEventListener('focusin', () => setTimeout(setViewport, 300));
-document.addEventListener('focusout', () => setTimeout(setViewport, 300));
-
 /* ===================== VERSION ===================== */
 const APP_VERSION = '1.10 beta';
 const VERSION_KEY = 'pisfon_version';
 const CHANGELOG = [
-  'اجرای تمام‌صفحه روی همه گوشی‌ها (Samsung، iPhone، Android)',
+  'نوار تب چسبیده به لبه فیزیکی پایین iPhone/Samsung',
+  'اجرای تمام‌صفحه روی همه گوشی‌ها',
   'سازگاری با Notch، Punch-hole، Dynamic Island',
   'فیکس پالت رنگ پروفایل — هر ۱۲ رنگ',
   'شماره تلفن با +98 و چپ‌چین',
@@ -113,8 +112,7 @@ const CHANGELOG = [
   'آواتار فرستنده در گروه',
   'هوش مصنوعی در گروه و چت خصوصی',
   'باکس پیام‌ها سه‌بعدی',
-  'تیک آبی، آیدی، عمومی/خصوصی',
-  'ایموجی پیکر با ۹ دسته'
+  'تیک آبی، آیدی، عمومی/خصوصی'
 ];
 
 const renderedMsgIds = new Set();
