@@ -11,7 +11,7 @@ const KEY = 'pisfon_v3';
 const COLOR_FIX_KEY = 'pisfon_color_fix_v1';
 
 /* =========================================================
-   VIEWPORT FIX — هر گوشی، هر سایز
+   VIEWPORT FIX — بدون محاسبه ارتفاع (چون #app از position:fixed)
    ========================================================= */
 function setViewport() {
   const h = window.innerHeight;
@@ -19,17 +19,10 @@ function setViewport() {
   const root = document.documentElement;
   root.style.setProperty('--vh', (h * 0.01) + 'px');
   root.style.setProperty('--vw', (w * 0.01) + 'px');
-  root.style.setProperty('--app-h', h + 'px');
 }
 setViewport();
 window.addEventListener('resize', setViewport);
 window.addEventListener('orientationchange', () => setTimeout(setViewport, 200));
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', setViewport);
-  window.visualViewport.addEventListener('scroll', setViewport);
-}
-document.addEventListener('focusin', () => setTimeout(setViewport, 300));
-document.addEventListener('focusout', () => setTimeout(setViewport, 300));
 
 /* =========================================================
    FULLSCREEN + ORIENTATION LOCK
@@ -104,6 +97,7 @@ const APP_VERSION = '1.10 beta';
 const VERSION_KEY = 'pisfon_version';
 const CHANGELOG = [
   'نوار تب چسبیده به لبه فیزیکی پایین iPhone/Samsung',
+  'حذف کامل حاشیه سیاه زیر برنامه',
   'اجرای تمام‌صفحه روی همه گوشی‌ها',
   'سازگاری با Notch، Punch-hole، Dynamic Island',
   'فیکس پالت رنگ پروفایل — هر ۱۲ رنگ',
@@ -111,7 +105,6 @@ const CHANGELOG = [
   'دیزاین مدرن ۲۰۲۵',
   'آواتار فرستنده در گروه',
   'هوش مصنوعی در گروه و چت خصوصی',
-  'باکس پیام‌ها سه‌بعدی',
   'تیک آبی، آیدی، عمومی/خصوصی'
 ];
 
