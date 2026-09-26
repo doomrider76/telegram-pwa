@@ -248,7 +248,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   flex:1;min-height:0;
   overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
-  padding:0 8px calc(48px + env(safe-area-inset-bottom, 0px));
+  padding:0 8px calc(42px + env(safe-area-inset-bottom, 0px));
   overscroll-behavior:contain;
 }
 .tab-body.hidden{display:none}
@@ -359,7 +359,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .fab:active{transform:scale(.88)}
 .fab svg{fill:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 
-/* ===== TABBAR (کوچک‌شده) ===== */
+/* ===== TABBAR (کوتاه‌تر + آیکون بزرگ‌تر + انیمیشن پایدار) ===== */
 .tabbar{
   position:fixed;
   bottom:0;
@@ -382,39 +382,50 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:center;
   gap:1px;
-  padding:4px 0 6px;
-  font-size:9px;
+  padding:3px 0 6px;
+  font-size:9.5px;
   font-weight:600;
   color:rgba(255,255,255,.38);
   background:transparent!important;
   letter-spacing:.1px;
   position:relative;
-  transition:color .2s;
+  transition:color .22s;
   min-height:auto;
 }
 .tabbar button svg{
   fill:none;
   stroke:currentColor;
-  transition:transform .2s;
-  width:20px;
-  height:20px;
+  stroke-width:1.8;
+  width:26px;
+  height:26px;
+  transform-origin:center center;
 }
 .tabbar button.active{
   color:var(--accent-2);
 }
 .tabbar button.active svg{
-  transform:scale(1.08);
-  filter:drop-shadow(0 2px 6px rgba(59,130,246,.5));
+  animation:tabPop .4s cubic-bezier(.34,1.56,.64,1) forwards;
+  filter:drop-shadow(0 2px 10px rgba(59,130,246,.75));
+}
+@keyframes tabPop{
+  0%   { transform:scale(.85); }
+  55%  { transform:scale(1.22); }
+  100% { transform:scale(1.12); }
 }
 .tabbar button.active::after{
   content:"";
   position:absolute;
-  top:1px;
-  width:16px;height:2px;border-radius:2px;
+  top:0;
+  width:22px;height:2.5px;border-radius:2px;
   background:linear-gradient(90deg,#60a5fa,#3b82f6);
-  box-shadow:0 0 10px rgba(59,130,246,.8);
+  box-shadow:0 0 12px rgba(59,130,246,.9);
+  animation:tabLine .3s ease-out;
+}
+@keyframes tabLine{
+  from{ width:0; opacity:0; }
+  to  { width:22px; opacity:1; }
 }
 
 /* ===== MESSAGES ===== */
@@ -707,7 +718,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .switch input:checked + .sl:before{transform:translateX(-20px)}
 .switch.purple input:checked + .sl{background:linear-gradient(180deg,#a78bfa,#8b5cf6)}
 
-#toast{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,40,.96);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--line-2);color:#fff;padding:12px 22px;border-radius:var(--r-pill);font-size:13.5px;z-index:200;opacity:0;pointer-events:none;transition:.3s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;font-weight:600;box-shadow:var(--sh-3);}
+#toast{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,40,.96);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--line-2);color:#fff;padding:12px 22px;border-radius:var(--r-pill);font-size:13.5px;z-index:200;opacity:0;pointer-events:none;transition:.3s cubic-bezier(.32,.72,0,1);white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;font-weight:600;box-shadow:var(--sh-3);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .empty{text-align:center;color:var(--text-3);font-size:13.5px;padding:60px 40px;line-height:1.8;}
@@ -746,9 +757,9 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 /* Landscape */
 @media (orientation: landscape) and (max-height: 500px) {
   .hdr { min-height: 44px; padding-top: max(env(safe-area-inset-top, 0px), 4px); padding-bottom: 4px; }
-  .tabbar button { padding: 3px 0 4px; font-size: 8.5px; }
-  .tabbar button svg { width: 18px; height: 18px; }
-  .fab { bottom: calc(46px + env(safe-area-inset-bottom, 0px)); width: 50px; height: 50px; }
+  .tabbar button { padding: 2px 0 4px; font-size: 8.5px; }
+  .tabbar button svg { width: 22px; height: 22px; }
+  .fab { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); width: 50px; height: 50px; }
 }
 
 @media (max-width: 1024px) {
