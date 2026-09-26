@@ -1621,6 +1621,24 @@ $('#chat-avatar').addEventListener('click', () => {
   openInfo(activeChatId);
 });
 
+/* ===================== LIST TITLE (پایدار برای انیمیشن) ===================== */
+const TITLE_LOGO_HTML = `<span class="logo-wrap"><span class="logo-text">پیسفون</span></span>`;
+
+function setListTitle(tab) {
+  const el = $('#list-title');
+  if (!el) return;
+  if (tab === 'chats') {
+    /* اگر عنصر لاگوتکست از قبل هست، دست نزن تا انیمیشن restart نشه */
+    if (!el.querySelector('.logo-text')) {
+      el.innerHTML = TITLE_LOGO_HTML;
+    }
+  } else if (tab === 'contacts') {
+    el.textContent = 'مخاطبین';
+  } else {
+    el.textContent = 'تنظیمات';
+  }
+}
+
 /* ===================== TABS ===================== */
 $$('.tabbar button').forEach(btn => btn.addEventListener('click', () => {
   $$('.tabbar button').forEach(b => b.classList.remove('active'));
@@ -1630,8 +1648,10 @@ $$('.tabbar button').forEach(btn => btn.addEventListener('click', () => {
   $('#tab-' + tab).classList.remove('hidden');
   $('#fab-new').style.display = tab === 'chats' ? 'flex' : 'none';
   $('#btn-search-toggle').style.display = tab === 'chats' ? 'flex' : 'none';
-  $('#list-title').textContent =
-    tab === 'chats' ? 'پیسفون' : (tab === 'contacts' ? 'مخاطبین' : 'تنظیمات');
+
+  /* ✅ به‌جای textContent از setListTitle استفاده می‌کنیم */
+  setListTitle(tab);
+
   if (tab === 'contacts') renderContacts();
   if (tab === 'settings') renderSettings();
 }));
