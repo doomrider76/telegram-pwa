@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="تلگرام">
-<meta name="theme-color" content="#17212b">
+<meta name="apple-mobile-web-app-title" content="پیسفون">
+<meta name="theme-color" content="#000000">
 <meta name="format-detection" content="telephone=no">
-<meta name="mobile-web-app-capable" content="yes">
-<title>تلگرام</title>
+<title>پیسفون</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -20,15 +21,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></symbol>
-  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></symbol>
   <symbol id="i-attach" viewBox="0 0 24 24"><path d="M16.5 6v11.5a4 4 0 0 1-8 0V5a2.5 2.5 0 0 1 5 0v10.5a1 1 0 0 1-2 0V6H10v9.5a2.5 2.5 0 0 0 5 0V5a4 4 0 1 0-8 0v12.5a5.5 5.5 0 0 0 11 0V6h-1.5z"/></symbol>
   <symbol id="i-smile" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm3.5-9a1.5 1.5 0 1 0-1.5-1.5 1.5 1.5 0 0 0 1.5 1.5zm-7 0A1.5 1.5 0 1 0 7 9.5 1.5 1.5 0 0 0 8.5 11zM12 17.5a5.5 5.5 0 0 0 4.7-2.5H7.3A5.5 5.5 0 0 0 12 17.5z"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></symbol>
   <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></symbol>
+  <symbol id="i-chat-outline" viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 14H5.17L4 17.17V4h16z"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 0A4 4 0 1 0 4 7a4 4 0 0 0 4 4zm0 2c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4zm8 0a9.7 9.7 0 0 0-2.16.25A5.6 5.6 0 0 1 16 17v3h6v-3c0-2.66-5.33-4-8-4z"/></symbol>
+  <symbol id="i-users-outline" viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 0A4 4 0 1 0 4 7a4 4 0 0 0 4 4zm0 2c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4zm8 0a9.7 9.7 0 0 0-2.16.25A5.6 5.6 0 0 1 16 17v3h6v-3c0-2.66-5.33-4-8-4z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><path d="M19.4 13a7.8 7.8 0 0 0 0-2l2.1-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.3 7.3 0 0 0-1.73-1L14.5 2.4a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.42l-.31 2.63a7.3 7.3 0 0 0-1.73 1l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64L4.6 11a7.8 7.8 0 0 0 0 2l-2.1 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1a7.3 7.3 0 0 0 1.73 1l.31 2.63a.5.5 0 0 0 .5.42h4a.5.5 0 0 0 .5-.42l.31-2.63a7.3 7.3 0 0 0 1.73-1l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"/></symbol>
+  <symbol id="i-settings-outline" viewBox="0 0 24 24"><path d="M19.4 13a7.8 7.8 0 0 0 0-2l2.1-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.3 7.3 0 0 0-1.73-1L14.5 2.4a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.42l-.31 2.63a7.3 7.3 0 0 0-1.73 1l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64L4.6 11a7.8 7.8 0 0 0 0 2l-2.1 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1a7.3 7.3 0 0 0 1.73 1l.31 2.63a.5.5 0 0 0 .5.42h4a.5.5 0 0 0 .5-.42l.31-2.63a7.3 7.3 0 0 0 1.73-1l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
   <symbol id="i-reply" viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></symbol>
@@ -47,75 +51,123 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
   <symbol id="i-double-check" viewBox="0 0 24 24"><path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12zM.41 13.41 6 19l1.41-1.41L1.83 12z"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></symbol>
-  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36A7 7 0 0 1 12 3z"/></symbol>
   <symbol id="i-save" viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7zm-5 16a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm3-10H5V5h10z"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></symbol>
   <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M20 4v12l-6-3-2 6-1-1 2-5-4-2-5 3V4l5 3 6-3 5-3zM6 15v4H4v-4z"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5z"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.66 0 3-1.34 3-3 0-.55-.2-1.05-.54-1.44-.34-.4-.46-.93-.46-1.56a2 2 0 0 1 2-2h2a5 5 0 0 0 5-5c0-2.76-4.92-5-11-5zM6.5 12A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 6.5 12zm3-4A1.5 1.5 0 1 1 11 6.5 1.5 1.5 0 0 1 9.5 8zm5 0A1.5 1.5 0 1 1 16 6.5 1.5 1.5 0 0 1 14.5 8zm3 4a1.5 1.5 0 1 1 1.5-1.5A1.5 1.5 0 0 1 17.5 12z"/></symbol>
+  <symbol id="i-verified" viewBox="0 0 24 24"><path d="M12 1l2.4 2.1 3.1-.4 1 3 3 1-.5 3.2L22 12l-1.1 2.1.5 3.2-3 1-1 3-3.1-.4L12 23l-2.4-2.1-3.1.4-1-3-3-1 .5-3.2L2 12l1.1-2.1-.5-3.2 3-1 1-3 3.1.4z" fill="#0a84ff"/><path d="M10.6 15.4l-2.8-2.8 1.4-1.4 1.4 1.4 3.8-3.8 1.4 1.4z" fill="#fff"/></symbol>
 </svg>
 
 <div id="app">
+
   <section class="screen" id="screen-list">
-    <header class="hdr">
-      <button class="icon-btn" id="btn-search-toggle"><svg width="22" height="22"><use href="#i-search"/></svg></button>
-      <div class="hdr-title" id="list-title">تلگرام</div>
-      <button class="icon-btn" id="btn-menu-list"><svg width="22" height="22"><use href="#i-menu"/></svg></button>
+    <header class="hdr lg">
+      <button class="icon-btn" id="btn-menu-list">
+        <svg width="22" height="22"><use href="#i-menu"/></svg>
+      </button>
+      <div class="hdr-title" id="list-title">پیسفون</div>
+      <button class="icon-btn" id="btn-search-toggle">
+        <svg width="22" height="22"><use href="#i-search"/></svg>
+      </button>
     </header>
+
     <div class="tab-body" id="tab-chats">
       <div class="searchbar" id="searchbar" style="display:none">
-        <input id="search-input" placeholder="جستجو…">
+        <input id="search-input" placeholder="جستجو">
       </div>
       <div class="list" id="chat-list"></div>
     </div>
-    <div class="tab-body hidden" id="tab-contacts"><div class="list" id="contacts-list"></div></div>
-    <div class="tab-body hidden" id="tab-settings"><div id="settings-body"></div></div>
-    <button class="fab" id="fab-new"><svg width="26" height="26"><use href="#i-plus"/></svg></button>
-    <nav class="tabbar">
-      <button data-tab="chats" class="active"><svg width="24" height="24"><use href="#i-chat"/></svg><span>گفتگوها</span></button>
-      <button data-tab="contacts"><svg width="24" height="24"><use href="#i-users"/></svg><span>مخاطبین</span></button>
-      <button data-tab="settings"><svg width="24" height="24"><use href="#i-settings"/></svg><span>تنظیمات</span></button>
+
+    <div class="tab-body hidden" id="tab-contacts">
+      <div class="list" id="contacts-list"></div>
+    </div>
+
+    <div class="tab-body hidden" id="tab-settings">
+      <div id="settings-body"></div>
+    </div>
+
+    <button class="fab lg" id="fab-new">
+      <svg width="24" height="24"><use href="#i-plus"/></svg>
+    </button>
+
+    <nav class="tabbar lg">
+      <button data-tab="contacts">
+        <svg width="26" height="26"><use href="#i-users-outline"/></svg>
+        <span>مخاطبین</span>
+      </button>
+      <button data-tab="chats" class="active">
+        <svg width="26" height="26"><use href="#i-chat"/></svg>
+        <span>گفتگوها</span>
+      </button>
+      <button data-tab="settings">
+        <svg width="26" height="26"><use href="#i-settings-outline"/></svg>
+        <span>تنظیمات</span>
+      </button>
     </nav>
   </section>
 
   <section class="screen" id="screen-chat">
-    <header class="hdr">
-      <button class="icon-btn back-btn" id="btn-back"><svg width="24" height="24"><use href="#i-back"/></svg></button>
+    <header class="hdr lg">
+      <button class="icon-btn back-btn" id="btn-back">
+        <svg width="24" height="24"><use href="#i-back"/></svg>
+      </button>
       <div class="avatar sm" id="chat-avatar"></div>
       <div class="chat-info">
         <div class="hdr-title" id="chat-name"></div>
         <div id="chat-status"></div>
       </div>
-      <button class="icon-btn" id="btn-call"><svg width="21" height="21"><use href="#i-phone"/></svg></button>
-      <button class="icon-btn" id="btn-chat-menu"><svg width="21" height="21"><use href="#i-menu"/></svg></button>
+      <button class="icon-btn" id="btn-call">
+        <svg width="22" height="22"><use href="#i-phone"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-chat-menu">
+        <svg width="22" height="22"><use href="#i-menu"/></svg>
+      </button>
     </header>
+
     <div id="messages"></div>
-    <div class="reply-bar" id="reply-bar">
+
+    <div class="reply-bar lg" id="reply-bar">
       <div class="rb-bar"></div>
       <div class="rb-body">
         <div class="rb-name" id="rb-name"></div>
         <div class="rb-text" id="rb-text"></div>
       </div>
-      <button class="icon-btn" id="rb-close"><svg width="18" height="18"><use href="#i-close"/></svg></button>
+      <button class="icon-btn" id="rb-close">
+        <svg width="18" height="18"><use href="#i-close"/></svg>
+      </button>
     </div>
-    <div class="rec-bar" id="rec-bar">
+
+    <div class="rec-bar lg" id="rec-bar">
       <span class="rec-dot"></span>
       <span id="rec-time">0:00</span>
       <span class="rec-cancel" id="rec-cancel">برای لغو بکشید</span>
     </div>
-    <div class="composer" id="composer">
-      <button class="icon-btn" id="btn-attach"><svg width="24" height="24"><use href="#i-attach"/></svg></button>
-      <div class="input-wrap"><textarea id="msg-input" rows="1" placeholder="پیام"></textarea></div>
-      <button class="icon-btn" id="btn-emoji"><svg width="24" height="24"><use href="#i-smile"/></svg></button>
-      <button class="send-btn" id="btn-send"><svg width="22" height="22" id="send-icon"><use href="#i-mic"/></svg></button>
+
+    <div class="composer lg" id="composer">
+      <button class="icon-btn" id="btn-attach">
+        <svg width="24" height="24"><use href="#i-attach"/></svg>
+      </button>
+      <div class="input-wrap">
+        <textarea id="msg-input" rows="1" placeholder="پیام"></textarea>
+      </div>
+      <button class="icon-btn" id="btn-emoji">
+        <svg width="24" height="24"><use href="#i-smile"/></svg>
+      </button>
+      <button class="send-btn" id="btn-send">
+        <svg width="22" height="22"><use href="#i-mic"/></svg>
+      </button>
     </div>
   </section>
 </div>
 
-<div class="overlay" id="sheet-overlay"><div class="sheet" id="sheet-content"></div></div>
-<div class="overlay" id="emoji-overlay"><div class="sheet" id="emoji-panel"></div></div>
-<div class="modal" id="modal"><div class="modal-box" id="modal-box"></div></div>
-<div id="toast"></div>
+<div class="overlay" id="sheet-overlay"><div class="sheet lg-strong" id="sheet-content"></div></div>
+<div class="overlay" id="emoji-overlay"><div class="sheet lg-strong" id="emoji-panel"></div></div>
+<div class="overlay" id="avatar-overlay"><div class="sheet lg-strong" id="avatar-panel"></div></div>
+<div class="modal" id="modal"><div class="modal-box lg-strong" id="modal-box"></div></div>
+<div id="toast" class="lg-strong"></div>
 
 <script src="script.js" defer></script>
 </body>
