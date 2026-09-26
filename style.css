@@ -1,5 +1,5 @@
 /* =========================================================
-   پیسفون v1.10 beta — Modern 2025
+   پیسفون v1.10 beta — Modern 2025 + Fullscreen
    ========================================================= */
 
 :root{
@@ -47,11 +47,19 @@
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
 html,body{
   margin:0;padding:0;
-  height:100%;width:100%;
+  width:100vw;max-width:100vw;
+  height:100%;
+  height:100dvh;
+  height:-webkit-fill-available;
+  min-height:-webkit-fill-available;
   overflow:hidden;
   overscroll-behavior:none;
+  -webkit-overflow-scrolling:auto;
+  position:fixed;
+  inset:0;
   font-family:'Vazirmatn',-apple-system,BlinkMacSystemFont,"SF Pro Text",Tahoma,sans-serif;
   font-feature-settings:"ss01","kern";
   background:var(--bg);
@@ -62,16 +70,36 @@ html,body{
   touch-action:manipulation;
   letter-spacing:-.1px;
   font-weight:400;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
 }
 
 #app{
-  position:relative;
-  width:100%;
+  position:fixed;
+  inset:0;
+  width:100vw;
+  max-width:100vw;
   height:var(--app-h);
   min-height:var(--app-h);
   max-height:var(--app-h);
   overflow:hidden;
   background:var(--bg);
+}
+
+/* ===== FULLSCREEN STATES ===== */
+html:fullscreen,
+html:-webkit-full-screen,
+html:-moz-full-screen,
+html:-ms-fullscreen {
+  width:100%;
+  height:100%;
+  background:#000;
+}
+html:fullscreen body,
+html:-webkit-full-screen body {
+  height:100%;
+  width:100%;
 }
 
 button,input,textarea{font-family:inherit;color:inherit;font-size:inherit}
@@ -238,6 +266,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .screen{
   position:absolute;
   top:0;left:0;right:0;
+  width:100%;
   height:100%;
   display:flex;flex-direction:column;
   background:var(--bg);
@@ -261,6 +290,8 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   display:flex;align-items:center;gap:4px;
   padding:env(safe-area-inset-top,0px) 8px 0;
   padding-top:max(env(safe-area-inset-top,0px), 8px);
+  padding-left:max(env(safe-area-inset-left,0px), 8px);
+  padding-right:max(env(safe-area-inset-right,0px), 8px);
   min-height:56px;
   background:rgba(0,0,0,.75);
   backdrop-filter:blur(30px) saturate(180%);
@@ -404,6 +435,8 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   display:flex;
   padding:6px 0;
   padding-bottom:max(env(safe-area-inset-bottom,0px), 6px);
+  padding-left:max(env(safe-area-inset-left,0px), 0px);
+  padding-right:max(env(safe-area-inset-right,0px), 0px);
   flex-shrink:0;
   background:rgba(6,6,10,.92);
   backdrop-filter:blur(30px) saturate(180%);
@@ -472,9 +505,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   border-top-color:rgba(255,255,255,.1);
   border-bottom-right-radius:6px;
   color:#f0f0f5;
-  box-shadow:
-    0 2px 8px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.04);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);
 }
 
 .msg.out{
@@ -484,10 +515,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   border-top-color:rgba(147,197,253,.5);
   border-bottom-left-radius:6px;
   color:#fff;
-  box-shadow:
-    0 4px 16px rgba(59,130,246,.3),
-    0 1px 4px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(147,197,253,.25);
+  box-shadow:0 4px 16px rgba(59,130,246,.3),0 1px 4px rgba(0,0,0,.35),inset 0 1px 0 rgba(147,197,253,.25);
 }
 
 .msg.selected{filter:brightness(1.25);transform:scale(.98)}
@@ -498,8 +526,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   font-size:11px;
   margin-top:3px;margin-right:-3px;
   opacity:.85;float:left;
-  padding-left:6px;
-  font-weight:500;
+  padding-left:6px;font-weight:500;
 }
 .msg.in .meta{color:rgba(255,255,255,.42)}
 .msg.out .meta{color:rgba(255,255,255,.85)}
@@ -607,15 +634,12 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   background:linear-gradient(135deg,#2d1b4e 0%,#1e1235 100%)!important;
   border:1px solid rgba(139,92,246,.35)!important;
   border-top-color:rgba(167,139,250,.55)!important;
-  box-shadow:0 4px 20px rgba(139,92,246,.25),
-             0 1px 4px rgba(0,0,0,.35),
-             inset 0 1px 0 rgba(196,181,253,.2)!important;
+  box-shadow:0 4px 20px rgba(139,92,246,.25),0 1px 4px rgba(0,0,0,.35),inset 0 1px 0 rgba(196,181,253,.2)!important;
 }
 .msg.ai .ai-label{
   display:flex;align-items:center;gap:5px;
   font-size:11px;font-weight:700;
-  color:#c4b5fd;margin-bottom:5px;
-  letter-spacing:.3px;
+  color:#c4b5fd;margin-bottom:5px;letter-spacing:.3px;
 }
 .msg.ai .ai-label svg{fill:#c4b5fd;width:12px;height:12px}
 
@@ -624,8 +648,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   width:36px;height:36px;border-radius:50%;
   background:rgba(255,255,255,.14);color:#fff;
   display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  border:1px solid rgba(255,255,255,.14);
+  flex-shrink:0;border:1px solid rgba(255,255,255,.14);
 }
 .msg.in .vplay{
   background:linear-gradient(180deg,#60a5fa,#3b82f6);
@@ -725,8 +748,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   color:#fff;
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;
-  box-shadow:0 4px 14px rgba(59,130,246,.5),
-             inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow:0 4px 14px rgba(59,130,246,.5),inset 0 1px 0 rgba(255,255,255,.35);
   border:1px solid rgba(255,255,255,.15);
 }
 .send-btn svg{fill:#fff}
@@ -856,7 +878,6 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   border-color:rgba(59,130,246,.5);
   background:rgba(59,130,246,.06);
 }
-/* ===== LTR input (شماره تلفن) ===== */
 .modal-box input.ltr,
 .modal-box input[dir="ltr"]{
   direction:ltr;
@@ -1184,3 +1205,49 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .info-stat:active{transform:scale(.96);background:rgba(59,130,246,.12)}
 .info-stat b{color:var(--text);font-weight:700;font-size:16px}
 .info-stat.editable::after{content:" ✎";opacity:.45;font-size:12px}
+
+/* =========================================================
+   FULLSCREEN — هر سایز، هر گوشی
+   ========================================================= */
+
+/* Landscape — چرخش افقی */
+@media (orientation: landscape) and (max-height: 500px) {
+  .hdr {
+    min-height: 44px;
+    padding-top: max(env(safe-area-inset-top, 0px), 4px);
+  }
+  .tabbar {
+    padding: 4px 0;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);
+  }
+  .tabbar button {
+    padding: 5px 0 4px;
+    font-size: 9px;
+  }
+  .fab {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Samsung punch-hole */
+@media screen and (min-width: 1080px) and (min-height: 2000px) {
+  .hdr {
+    padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  }
+}
+
+/* iPhone Dynamic Island */
+@supports (padding: max(0px)) {
+  .hdr {
+    padding-top: max(env(safe-area-inset-top, 0px), 12px);
+  }
+}
+
+/* کیبورد موبایل */
+@media (max-width: 1024px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
