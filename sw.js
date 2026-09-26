@@ -1,4 +1,4 @@
-const CACHE = 'pisfon-v7';
+const CACHE = 'pisfon-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -26,7 +26,6 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
-  // درخواست‌های AI API رو کش نکن
   if (e.request.url.includes('pollinations.ai')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;
