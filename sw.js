@@ -1,12 +1,11 @@
-const CACHE = 'pisfon-v3';
+const CACHE = 'pisfon-v7';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './script.js',
   './manifest.json',
-  './icon.svg',
-  './icon-mask.svg',
+  'https://nakamology.ir/assets/static/bisphone.39a2979.282e18214f9280ef247bf25dbffc4dca.png',
   'https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css'
 ];
 
@@ -26,6 +25,13 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+
+  // درخواست‌های AI API رو کش نکن
+  if (e.request.url.includes('pollinations.ai')) {
+    e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
