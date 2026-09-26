@@ -1,5 +1,5 @@
 /* =========================================================
-   پیسفون v1.10 beta
+   پیسفون v1.12
    ========================================================= */
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -8,11 +8,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const icon = (name, size = 20) => `<svg width="${size}" height="${size}"><use href="#i-${name}"/></svg>`;
 const KEY = 'pisfon_v3';
-const COLOR_FIX_KEY = 'pisfon_color_fix_v1';
 
-/* =========================================================
-   VIEWPORT FIX — بدون محاسبه ارتفاع (چون #app از position:fixed)
-   ========================================================= */
+/* ===================== VIEWPORT ===================== */
 function setViewport() {
   const h = window.innerHeight;
   const w = window.innerWidth;
@@ -24,17 +21,12 @@ setViewport();
 window.addEventListener('resize', setViewport);
 window.addEventListener('orientationchange', () => setTimeout(setViewport, 200));
 
-/* =========================================================
-   FULLSCREEN + ORIENTATION LOCK
-   ========================================================= */
+/* ===================== FULLSCREEN ===================== */
 let _fsOnce = false;
-
 function requestFullscreen() {
   const el = document.documentElement;
-  const req = el.requestFullscreen
-           || el.webkitRequestFullscreen
-           || el.mozRequestFullScreen
-           || el.msRequestFullscreen;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen
+           || el.mozRequestFullScreen || el.msRequestFullscreen;
   if (!req) return;
   if (document.fullscreenElement || document.webkitFullscreenElement) return;
   try {
@@ -42,7 +34,6 @@ function requestFullscreen() {
     if (p && p.catch) p.catch(() => {});
   } catch (e) {}
 }
-
 function lockOrientation() {
   try {
     if (screen.orientation && screen.orientation.lock) {
@@ -52,18 +43,15 @@ function lockOrientation() {
     }
   } catch (e) {}
 }
-
 function tryFullscreenOnce() {
   if (_fsOnce) return;
   _fsOnce = true;
   requestFullscreen();
   lockOrientation();
 }
-
 ['touchstart', 'click', 'keydown'].forEach(ev => {
   document.addEventListener(ev, tryFullscreenOnce, { once: true, passive: true });
 });
-
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement) {
     _fsOnce = false;
@@ -80,12 +68,10 @@ document.addEventListener('webkitfullscreenchange', () => {
     });
   }
 });
-
 document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', e => {
   if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
-
 document.addEventListener('contextmenu', e => {
   if (!e.target.closest('#msg-input') && !e.target.closest('.btext')) {
     e.preventDefault();
@@ -93,19 +79,19 @@ document.addEventListener('contextmenu', e => {
 });
 
 /* ===================== VERSION ===================== */
-const APP_VERSION = '1.10 beta';
+const APP_VERSION = '1.12';
 const VERSION_KEY = 'pisfon_version';
 const CHANGELOG = [
-  'نوار تب چسبیده به لبه فیزیکی پایین iPhone/Samsung',
-  'حذف کامل حاشیه سیاه زیر برنامه',
-  'اجرای تمام‌صفحه روی همه گوشی‌ها',
-  'سازگاری با Notch، Punch-hole، Dynamic Island',
-  'فیکس پالت رنگ پروفایل — هر ۱۲ رنگ',
-  'شماره تلفن با +98 و چپ‌چین',
-  'دیزاین مدرن ۲۰۲۵',
-  'آواتار فرستنده در گروه',
-  'هوش مصنوعی در گروه و چت خصوصی',
-  'تیک آبی، آیدی، عمومی/خصوصی'
+  'باگ نسخه‌های iPhone فیکس شد',
+  'زیرساخت برنامه آپدیت شد',
+  'لودینگ برنامه حذف شد',
+  'لیست کانال‌ها آپدیت شد',
+  'دستیار هوشمند پیسفون برگشت',
+  'تیک آبی سفید شد',
+  'منوی کانال/گروه با نگه‌داشتن در لیست',
+  'آیکون‌های نوار تب مدرن‌تر شدن',
+  'فاصله بین آیکون و متن نوار تب بیشتر شد',
+  'چت گروه و کانال فیکس شد'
 ];
 
 const renderedMsgIds = new Set();
@@ -134,7 +120,7 @@ const GROUP_MEMBER_POOL = [
   { name: 'نیلوفر', avatar: { type: 'emoji', value: '👩‍🦱' } }
 ];
 
-/* ===================== AI CONFIG ===================== */
+/* ===================== AI ===================== */
 const AI_SYSTEM_PROMPT =
   'تو دستیار هوشمند پیسفون هستی. جواب‌ها رو کوتاه (حداکثر ۲ خط)، دوستانه، مفید و به فارسی خودمونی بده. ' +
   'اگر سوال فنی بود دقیق جواب بده. از ایموجی به‌اندازه استفاده کن.';
@@ -162,36 +148,19 @@ async function fetchAIReply(userMessage, history = [], systemPrompt = null) {
     text = (text || '').trim();
     text = text.replace(/^(دستیار:|Assistant:)\s*/i, '').trim();
     return text || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-/* ===================== DEFAULT STATE ===================== */
+/* ===================== STATE ===================== */
 function defaultState() {
   const now = Date.now();
-  const aiChatId = 'ai_assistant';
-  const savedChatId = 'saved_msgs';
-  const groupId = 'family_group';
-
   return {
-    me: {
-      name: 'من',
-      phone: '+98 ',
-      avatar: { type: 'gradient', value: 3 },
-      verified: true
-    },
+    me: { name: 'من', phone: '+98 ', avatar: { type: 'gradient', value: 3 }, verified: true },
     theme: 'dark',
-    settings: {
-      autoReply: true,
-      autoIncoming: false,
-      enterToSend: true,
-      sounds: false,
-      aiMode: true
-    },
+    settings: { autoReply: true, autoIncoming: false, enterToSend: true, sounds: false, aiMode: true },
     chats: [
       {
-        id: aiChatId,
+        id: 'ai_assistant',
         name: 'دستیار پیسفون',
         type: 'ai',
         avatar: { type: 'gradient', value: 4 },
@@ -203,13 +172,13 @@ function defaultState() {
         createdAt: now - 3600000,
         messages: [
           { id: rid(), out: false, ts: now - 60000, type: 'text',
-            text: 'سلام 👋 من دستیار هوشمند پیسفون هستم.\nهر سوالی داری بپرس — اگه اینترنت داشته باشی با هوش مصنوعی جوابت می‌دم.' },
+            text: 'سلام 👋 من دستیار هوشمند پیسفون هستم.\nهر سوالی داری بپرس.' },
           { id: rid(), out: false, ts: now - 55000, type: 'text',
             text: 'مثلاً:\n• چطور کانال بسازم؟\n• یه شوخی بگو\n• هوای تهران چطوره؟' }
         ]
       },
       {
-        id: groupId,
+        id: 'family_group',
         name: 'گروه خانواده',
         type: 'group',
         avatar: { type: 'gradient', value: 5 },
@@ -233,7 +202,7 @@ function defaultState() {
         ]
       },
       {
-        id: savedChatId,
+        id: 'saved_msgs',
         name: 'پیام‌های ذخیره‌شده',
         type: 'saved',
         avatar: { type: 'gradient', value: 6 },
@@ -252,7 +221,6 @@ function defaultState() {
   };
 }
 
-/* ===================== LOAD / SAVE ===================== */
 let state;
 function load() {
   try {
@@ -268,7 +236,12 @@ function load() {
     if (typeof s.me.verified !== 'boolean') s.me.verified = true;
     if (!s.me.phone) s.me.phone = '+98 ';
 
-    const needsColorFix = !localStorage.getItem(COLOR_FIX_KEY);
+    /* ✅ اگر دستیار پیسفون حذف شده بود، برگردون */
+    if (!s.chats.find(c => c.id === 'ai_assistant')) {
+      const aiChat = defaultState().chats[0];
+      s.chats.unshift(aiChat);
+    }
+
     s.chats.forEach((c, i) => {
       if (!c.avatar) c.avatar = { type: 'gradient', value: i % AV_GRADS.length };
       if (typeof c.verified !== 'boolean') c.verified = false;
@@ -276,9 +249,6 @@ function load() {
       if (typeof c.isPublic !== 'boolean') c.isPublic = c.type === 'channel';
       if ((c.type === 'group' || c.type === 'channel') && typeof c.members !== 'number') {
         c.members = c.type === 'group' ? 1 : 0;
-      }
-      if (needsColorFix && c.avatar && c.avatar.type === 'gradient') {
-        c.avatar.value = i % AV_GRADS.length;
       }
       if (c.type === 'group' && !c.membersList) {
         c.membersList = (c.memberNames || []).map(n => {
@@ -292,9 +262,6 @@ function load() {
       if (!c.avatar) c.avatar = { type: 'gradient', value: i % AV_GRADS.length };
       if (typeof c.verified !== 'boolean') c.verified = false;
     });
-    if (needsColorFix) {
-      try { localStorage.setItem(COLOR_FIX_KEY, '1'); } catch {}
-    }
     return s;
   } catch { return null; }
 }
@@ -313,7 +280,6 @@ function hashInt(str, mod) {
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
   return Math.abs(h) % mod;
 }
-
 function nameColorPair(name) {
   const n = String(name || 'x');
   let h = 0;
@@ -322,7 +288,6 @@ function nameColorPair(name) {
   const hue2 = (hue + 32) % 360;
   return [`hsl(${hue}, 68%, 55%)`, `hsl(${hue2}, 62%, 42%)`];
 }
-
 function initials(name) {
   const t = (name || '').trim();
   if (!t) return '?';
@@ -330,7 +295,6 @@ function initials(name) {
   if (parts.length === 1) return parts[0][0];
   return parts[0][0] + parts[1][0];
 }
-
 function avatarHTML(entity, size = 54) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
   const dim = (size === 38 || size === 40) ? ' sm' : (size >= 86 ? ' big' : '');
@@ -349,7 +313,6 @@ function avatarHTML(entity, size = 54) {
   const [c1, c2] = nameColorPair(entity.name);
   return `<div class="${klass}" style="background:linear-gradient(135deg,${c1},${c2})">${esc(initials(entity.name))}</div>`;
 }
-
 function avatarBgStyle(entity) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
   if (av.type === 'image') {
@@ -362,14 +325,12 @@ function avatarBgStyle(entity) {
   const [c1, c2] = nameColorPair(entity.name);
   return `background:linear-gradient(135deg,${c1},${c2})`;
 }
-
 function avatarContent(entity) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
   if (av.type === 'emoji') return av.value;
   if (av.type === 'image') return '';
   return esc(initials(entity.name));
 }
-
 function vfHTML(size = 17) {
   return `<svg class="vf" width="${size}" height="${size}" viewBox="0 0 24 24"><use href="#i-verified"/></svg>`;
 }
@@ -430,7 +391,7 @@ function previewText(c) {
   return t;
 }
 
-/* ===================== RENDER: CHAT LIST ===================== */
+/* ===================== RENDER: LIST ===================== */
 function renderChatList() {
   const q = ($('#search-input').value || '').trim().toLowerCase();
   let list = state.chats.filter(c => !q || c.name.toLowerCase().includes(q));
@@ -441,7 +402,7 @@ function renderChatList() {
     box.innerHTML = state.chats.length
       ? `<div class="empty">${icon('search', 48)}<div class="ttl">چیزی پیدا نشد</div></div>`
       : `<div class="empty">
-          ${icon('chat', 56)}
+          ${icon('chat-outline', 56)}
           <div class="ttl">هنوز گفتگویی نداری</div>
           برای شروع روی دکمه + بزن
         </div>`;
@@ -536,25 +497,13 @@ function renderSettings() {
         <label class="switch purple"><input type="checkbox" data-set="aiMode" ${s.aiMode ? 'checked' : ''}>
         <span class="sl"></span></label>
       </div>
-      <div class="row" style="opacity:.7;cursor:default">
-        <span class="r-icon" style="background:linear-gradient(180deg,#bf5af2,#8e3fd6);opacity:.7">${icon('brain', 18)}</span>
-        <span class="r-text" style="font-size:13px;color:var(--text-2);font-weight:400;line-height:1.5">
-          در گروه‌ها، اعضای گروه با پروفایل خودشون جواب می‌دن.
-        </span>
-      </div>
     </div>
     <div class="section-title">رفتار</div>
     <div class="group">
       <div class="row">
-        <span class="r-icon">${icon('chat', 20)}</span>
+        <span class="r-icon">${icon('chat-outline', 20)}</span>
         <span class="r-text">پاسخ خودکار مخاطبین</span>
         <label class="switch"><input type="checkbox" data-set="autoReply" ${s.autoReply ? 'checked' : ''}>
-        <span class="sl"></span></label>
-      </div>
-      <div class="row">
-        <span class="r-icon">${icon('forward', 20)}</span>
-        <span class="r-text">پیام‌های دوره‌ای</span>
-        <label class="switch"><input type="checkbox" data-set="autoIncoming" ${s.autoIncoming ? 'checked' : ''}>
         <span class="sl"></span></label>
       </div>
       <div class="row">
@@ -660,7 +609,6 @@ function msgHTML(chat, m, prevMsg, nextMsg) {
     const senderName = m.sender || 'عضو';
     const sameSenderBefore = prevMsg && !prevMsg.out && prevMsg.sender === senderName;
     const sameSenderAfter = nextMsg && !nextMsg.out && nextMsg.sender === senderName;
-
     const member = (chat.membersList || []).find(x => x.name === senderName);
     const memberAv = member?.avatar || { type: 'gradient', value: 0 };
     const [c1, c2] = nameColorPair(senderName);
@@ -695,7 +643,7 @@ function renderMessages(scroll = true) {
           هر سوالی داری بپرس 👋
         </div>`
       : `<div class="empty" style="margin:auto;padding:40px">
-          ${icon('chat', 52)}
+          ${icon('chat-outline', 52)}
           <div class="ttl">شروع گفتگو</div>
           اولین پیامت رو بنویس
         </div>`;
@@ -788,9 +736,8 @@ function closeChat() {
   renderChatList();
 }
 
-/* ===================== INFO SCREEN ===================== */
+/* ===================== INFO ===================== */
 let infoChatId = null;
-
 function openInfo(id) {
   const c = getChat(id);
   if (!c) return;
@@ -833,10 +780,10 @@ function renderInfo() {
     </div>`;
   }
   if (c.type === 'private') {
-    stats = `<div class="info-stat">${icon(c.online ? 'chat' : 'phone', 16)} ${c.online ? 'آنلاین' : 'آخرین بازدید به تازگی'}</div>`;
+    stats = `<div class="info-stat">${icon(c.online ? 'chat-outline' : 'phone', 16)} ${c.online ? 'آنلاین' : 'آخرین بازدید به تازگی'}</div>`;
   }
   if (c.type === 'ai') {
-    stats = `<div class="info-stat">${icon(navigator.onLine ? 'sparkle' : 'chat', 16)} ${navigator.onLine ? 'آنلاین — پاسخ هوشمند' : 'آفلاین — پاسخ آماده'}</div>`;
+    stats = `<div class="info-stat">${icon(navigator.onLine ? 'sparkle' : 'chat-outline', 16)} ${navigator.onLine ? 'آنلاین — پاسخ هوشمند' : 'آفلاین — پاسخ آماده'}</div>`;
   }
 
   let membersList = '';
@@ -910,10 +857,8 @@ function renderInfo() {
       ${badges ? `<div class="info-badges">${badges}</div>` : ''}
       ${stats}
     </div>
-
     ${settingsGroup}
     ${membersList}
-
     <div class="section-title">عملیات</div>
     <div class="group">
       <div class="row" data-info-act="toggle-mute">
@@ -929,7 +874,6 @@ function renderInfo() {
         <span class="r-text" style="color:var(--red)">حذف چت</span>
       </div>
     </div>
-
     <div class="empty" style="padding:20px 40px 40px;font-size:12px;opacity:.55">
       شناسه: ${esc(c.id)}<br>
       ساخته شده در ${new Date(c.createdAt || Date.now()).toLocaleDateString('fa-IR')}
@@ -944,14 +888,12 @@ function renderInfo() {
       toast(c.verified ? 'تیک آبی فعال شد' : 'تیک آبی غیرفعال شد');
     });
   }
-
   $$('#info-body [data-info-act]').forEach(el => {
     el.addEventListener('click', e => {
       if (e.target.tagName === 'INPUT' || e.target.closest('label.switch')) return;
       handleInfoAction(el.dataset.infoAct, c);
     });
   });
-
   const avBtn = $('#info-avatar-btn');
   if (avBtn) {
     avBtn.addEventListener('click', () => {
@@ -976,9 +918,7 @@ function handleInfoAction(act, c) {
   if (act === 'edit-username') {
     showPrompt('آیدی (بدون @)', c.username || '', v => {
       let u = v.trim().replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-      if (!u) { toast('آیدی نمی‌تونه خالی باشه'); return; }
-      if (u.length < 3) { toast('حداقل ۳ کاراکتر'); return; }
-      if (u.length > 32) { toast('حداکثر ۳۲ کاراکتر'); return; }
+      if (!u || u.length < 3 || u.length > 32) { toast('حداقل ۳ کاراکتر'); return; }
       const dup = state.chats.find(x => x.id !== c.id && x.username === u);
       if (dup) { toast('این آیدی قبلاً گرفته شده'); return; }
       c.username = u;
@@ -997,8 +937,7 @@ function handleInfoAction(act, c) {
     showPrompt('تعداد اعضا', String(c.members || 0), v => {
       const n = parseInt(v, 10);
       if (isNaN(n) || n < 0) { toast('عدد معتبر وارد کن'); return; }
-      if (n > 9999999) { toast('حداکثر ۹٬۹۹۹٬۹۹۹'); return; }
-      c.members = n;
+      c.members = Math.min(n, 9999999);
       renderInfo(); renderChatHeader(); renderChatList(); save();
       toast('تعداد اعضا تغییر کرد');
     });
@@ -1051,20 +990,13 @@ function sendMessage(extra = {}, textOverride) {
   setTimeout(() => { m.status = 'read'; if (activeChatId === chat.id) renderMessages(false); save(); }, 1700);
 
   if (chat.type === 'ai') {
-    if (state.settings.aiMode && navigator.onLine) {
-      scheduleAIReply(chat, m.text);
-    } else {
-      scheduleReply(chat);
-    }
+    if (state.settings.aiMode && navigator.onLine) scheduleAIReply(chat, m.text);
+    else scheduleReply(chat);
     return;
   }
-
   if (state.settings.autoReply && chat.type !== 'saved' && chat.type !== 'channel') {
-    if (state.settings.aiMode && navigator.onLine) {
-      scheduleAIReply(chat, m.text);
-    } else {
-      scheduleReply(chat);
-    }
+    if (state.settings.aiMode && navigator.onLine) scheduleAIReply(chat, m.text);
+    else scheduleReply(chat);
   }
 }
 
@@ -1072,7 +1004,6 @@ function sendMessage(extra = {}, textOverride) {
 async function scheduleAIReply(chat, userMsg) {
   const c = getChat(chat.id);
   if (!c) return;
-
   await new Promise(r => setTimeout(r, 500 + Math.random() * 600));
 
   if (chat.type === 'group') {
@@ -1085,37 +1016,20 @@ async function scheduleAIReply(chat, userMsg) {
     for (let i = 0; i < repliers.length; i++) {
       const member = repliers[i];
       if (i > 0) await new Promise(r => setTimeout(r, 1400 + Math.random() * 1800));
-
       c.typing = true;
       c.typingSender = member.name;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
       save();
-
-      const history = c.messages
-        .filter(x => x.type === 'text')
-        .slice(-6)
-        .map(x => ({ out: x.out, text: x.text, sender: x.sender }));
-
-      const memberPrompt = `تو الان نقش «${member.name}» رو داری، یکی از اعضای گروه چت دوستانه «${c.name}» هستی. ` +
-        `جواب‌ها رو کوتاه (حداکثر ۲ خط)، فارسی خودمونی و دوستانه بده. از ایموجی به‌اندازه استفاده کن.`;
-
+      const history = c.messages.filter(x => x.type === 'text').slice(-6).map(x => ({ out: x.out, text: x.text, sender: x.sender }));
+      const memberPrompt = `تو الان نقش «${member.name}» رو داری، یکی از اعضای گروه چت دوستانه «${c.name}» هستی. جواب‌ها رو کوتاه (حداکثر ۲ خط)، فارسی خودمونی و دوستانه بده. از ایموجی به‌اندازه استفاده کن.`;
       let replyText = await fetchAIReply(userMsg, history, memberPrompt);
-
-      if (!replyText) {
-        replyText = ['😄','👌','موافقم','دمت گرم','باشه حتماً','چه جالب!',
-          'منم همینطور','عالیه!','😂','🚀'][Math.floor(Math.random() * 10)];
-      }
-
+      if (!replyText) replyText = ['😄','👌','موافقم','دمت گرم','باشه حتماً','چه جالب!','منم همینطور','عالیه!','😂','🚀'][Math.floor(Math.random() * 10)];
       c.typing = false;
       c.typingSender = null;
-      c.messages.push({
-        id: rid(), text: replyText, out: false, ts: Date.now(),
-        type: 'text', replyTo: null, sender: member.name
-      });
+      c.messages.push({ id: rid(), text: replyText, out: false, ts: Date.now(), type: 'text', replyTo: null, sender: member.name });
       if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
-      renderChatList();
-      save();
+      renderChatList(); save();
       if (state.settings.sounds) beep();
     }
     return;
@@ -1124,38 +1038,21 @@ async function scheduleAIReply(chat, userMsg) {
   c.typing = true;
   if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
   save();
-
-  const history = c.messages
-    .filter(x => x.type === 'text')
-    .slice(-8, -1);
-
+  const history = c.messages.filter(x => x.type === 'text').slice(-8, -1);
   let replyText = await fetchAIReply(userMsg, history);
-
   if (!replyText) {
     replyText = REPLIES[Math.floor(Math.random() * REPLIES.length)];
-    if (chat.type === 'ai') {
-      replyText = '⚠️ اتصال به هوش مصنوعی ممکن نشد.\n' + replyText;
-    }
+    if (chat.type === 'ai') replyText = '⚠️ اتصال به هوش مصنوعی ممکن نشد.\n' + replyText;
   }
-
   c.typing = false;
-  c.messages.push({
-    id: rid(), text: replyText, out: false, ts: Date.now(),
-    type: 'text', replyTo: null, sender: null
-  });
+  c.messages.push({ id: rid(), text: replyText, out: false, ts: Date.now(), type: 'text', replyTo: null, sender: null });
   if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
   if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
-  renderChatList();
-  save();
+  renderChatList(); save();
   if (state.settings.sounds) beep();
 }
 
-/* ===================== LOCAL AUTO REPLY ===================== */
-const REPLIES = [
-  'باشه 👍','چه جالب!','الان چک می‌کنم','مرسی 🙏','کاملاً موافقم',
-  'بعداً حرف می‌زنیم','عالیه!','دقیقاً','ممنون از پیامت','می‌شه بیشتر توضیح بدی؟',
-  'حتماً چشم','من هم همین فکر رو می‌کردم','خبر خوبیه!','🤔','😄'
-];
+const REPLIES = ['باشه 👍','چه جالب!','الان چک می‌کنم','مرسی 🙏','کاملاً موافقم','بعداً حرف می‌زنیم','عالیه!','دقیقاً','ممنون از پیامت','می‌شه بیشتر توضیح بدی؟','حتماً چشم','من هم همین فکر رو می‌کردم','خبر خوبیه!','🤔','😄'];
 
 function scheduleReply(chat) {
   setTimeout(() => {
@@ -1173,44 +1070,14 @@ function scheduleReply(chat) {
         sender = member.name;
         c.typingSender = null;
       }
-      c.messages.push({
-        id: rid(), text: REPLIES[Math.floor(Math.random() * REPLIES.length)],
-        out: false, ts: Date.now(), type: 'text', replyTo: null,
-        sender
-      });
+      c.messages.push({ id: rid(), text: REPLIES[Math.floor(Math.random() * REPLIES.length)], out: false, ts: Date.now(), type: 'text', replyTo: null, sender });
       if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
-      renderChatList();
-      save();
+      renderChatList(); save();
       if (state.settings.sounds) beep();
     }, 900 + Math.random() * 1400);
   }, 800 + Math.random() * 1400);
 }
-
-/* ===================== AMBIENT ===================== */
-const AMBIENT = ['سلام، هستی؟','یه چیزی پیدا کردم','خبر جدید داری؟','فردا ساعت چند بریم؟',
-  'عکس‌ها رو دیدی؟','یادت نره فردا جلسه داریم','اینو حتماً ببین','دمت گرم'];
-
-setInterval(() => {
-  if (!state.settings.autoIncoming) return;
-  const cands = state.chats.filter(c =>
-    c.type !== 'saved' && c.type !== 'channel' && c.type !== 'ai');
-  if (!cands.length) return;
-  const c = cands[Math.floor(Math.random() * cands.length)];
-  const isGroup = c.type === 'group';
-  let sender = null;
-  if (isGroup && c.membersList?.length) {
-    const member = c.membersList[Math.floor(Math.random() * c.membersList.length)];
-    sender = member.name;
-  }
-  c.messages.push({
-    id: rid(), text: AMBIENT[Math.floor(Math.random() * AMBIENT.length)],
-    out: false, ts: Date.now(), type: 'text', replyTo: null, sender
-  });
-  if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
-  if (activeChatId === c.id) renderMessages();
-  renderChatList(); save();
-}, 40000);
 
 /* ===================== BEEP ===================== */
 let audioCtx = null;
@@ -1257,7 +1124,6 @@ sendBtn.addEventListener('pointerdown', e => {
 });
 document.addEventListener('pointerup', () => { if (recActive) stopRec(false); });
 document.addEventListener('pointercancel', () => { if (recActive) stopRec(true); });
-
 function startRec() {
   recActive = true; recStart = Date.now();
   $('#composer').style.display = 'none';
@@ -1282,7 +1148,7 @@ function stopRec(cancel) {
 }
 $('#rec-cancel').addEventListener('click', () => stopRec(true));
 
-/* ===================== REPLY BAR ===================== */
+/* ===================== REPLY ===================== */
 function showReplyBar(m) {
   replyToMsg = m.id;
   const chat = getChat(activeChatId);
@@ -1293,7 +1159,7 @@ function showReplyBar(m) {
 }
 function hideReplyBar() { $('#reply-bar').classList.remove('show'); }
 
-/* ===================== PLAY VOICE ===================== */
+/* ===================== PLAY ===================== */
 $('#messages').addEventListener('click', e => {
   const btn = e.target.closest('.vplay');
   if (!btn) return;
@@ -1314,7 +1180,7 @@ $('#messages').addEventListener('click', e => {
   }, (m.dur || 3) * 1000);
 });
 
-/* ===================== LONG PRESS ===================== */
+/* ===================== LONG PRESS MESSAGE ===================== */
 let pressTimer = null, pressStart = null, pressedMsgEl = null;
 $('#messages').addEventListener('pointerdown', e => {
   const el = e.target.closest('.msg');
@@ -1336,10 +1202,6 @@ $('#messages').addEventListener('pointermove', e => {
   $('#messages').addEventListener(ev, () => {
     clearTimeout(pressTimer); pressTimer = null; pressStart = null;
   }));
-$('#messages').addEventListener('contextmenu', e => {
-  const el = e.target.closest('.msg');
-  if (el) { e.preventDefault(); showMsgMenu(el); }
-});
 
 function showMsgMenu(el) {
   const chat = getChat(activeChatId);
@@ -1347,15 +1209,12 @@ function showMsgMenu(el) {
   if (!m) return;
   el.classList.add('selected');
   setTimeout(() => el.classList.remove('selected'), 400);
-
   let items = `<div class="sheet-item" data-mact="reply">${icon('reply')}پاسخ</div>`;
   if (m.type === 'text') items += `<div class="sheet-item" data-mact="copy">${icon('copy')}کپی</div>`;
   if (m.out && m.type === 'text') items += `<div class="sheet-item" data-mact="edit">${icon('edit')}ویرایش</div>`;
   items += `<div class="sheet-item" data-mact="forward">${icon('forward')}هدایت</div>`;
   items += `<div class="sheet-item danger" data-mact="delete">${icon('trash')}حذف</div>`;
-
   openSheet(`<div class="sheet-title">پیام</div>${items}`);
-
   $$('#sheet-content [data-mact]').forEach(btn => btn.addEventListener('click', () => {
     const act = btn.dataset.mact;
     closeSheet();
@@ -1386,10 +1245,7 @@ function handleMsgAction(act, chat, m) {
         ${avatarHTML(c, 38)}${esc(c.name)}</div>`).join(''));
     $$('#sheet-content [data-fwd]').forEach(b => b.addEventListener('click', () => {
       const target = getChat(b.dataset.fwd);
-      target.messages.push({
-        id: rid(), text: m.text, out: true, ts: Date.now(), status: 'sent',
-        type: m.type, replyTo: null, dur: m.dur, bg: m.bg, size: m.size
-      });
+      target.messages.push({ id: rid(), text: m.text, out: true, ts: Date.now(), status: 'sent', type: m.type, replyTo: null, dur: m.dur, bg: m.bg, size: m.size });
       closeSheet(); renderChatList(); save();
       toast('هدایت شد به ' + target.name);
     }));
@@ -1400,6 +1256,91 @@ function handleMsgAction(act, chat, m) {
       chat.messages = chat.messages.filter(x => x.id !== m.id);
       renderMessages(false); renderChatList(); save(); toast('حذف شد');
     });
+  }
+}
+
+/* ===================== LONG PRESS CHAT LIST ===================== */
+let chatPressTimer = null, chatPressStart = null, pressedChatItem = null;
+$('#chat-list').addEventListener('pointerdown', e => {
+  const item = e.target.closest('.chat-item');
+  if (!item) return;
+  chatPressStart = { x: e.clientX, y: e.clientY };
+  pressedChatItem = item;
+  chatPressTimer = setTimeout(() => {
+    if (pressedChatItem) showChatListMenu(pressedChatItem.dataset.id);
+    chatPressTimer = null;
+  }, 450);
+});
+$('#chat-list').addEventListener('pointermove', e => {
+  if (!chatPressStart) return;
+  if (Math.abs(e.clientX - chatPressStart.x) > 8 || Math.abs(e.clientY - chatPressStart.y) > 8) {
+    clearTimeout(chatPressTimer); chatPressTimer = null;
+  }
+});
+['pointerup', 'pointercancel'].forEach(ev =>
+  $('#chat-list').addEventListener(ev, () => {
+    clearTimeout(chatPressTimer); chatPressTimer = null; chatPressStart = null;
+  }));
+
+function showChatListMenu(id) {
+  const c = getChat(id);
+  if (!c) return;
+  if (navigator.vibrate) navigator.vibrate(20);
+
+  let items = '';
+  items += `<div class="sheet-item" data-clact="open">${icon('chat-outline')}باز کردن</div>`;
+  if (c.type !== 'ai' && c.type !== 'saved') {
+    items += `<div class="sheet-item" data-clact="verified">${icon('verified')}${c.verified ? 'برداشتن تیک آبی' : 'دادن تیک آبی'}</div>`;
+  }
+  items += `<div class="sheet-item" data-clact="pin">${icon('pin')}${c.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'}</div>`;
+  items += `<div class="sheet-item" data-clact="mute">${icon(c.muted ? 'bell' : 'bell-off')}${c.muted ? 'فعال کردن اعلان' : 'بی‌صدا کردن'}</div>`;
+  items += `<div class="sheet-item" data-clact="info">${icon('user')}اطلاعات</div>`;
+  items += `<div class="sheet-item" data-clact="read">${icon('check')}خوانده‌شده علامت بزن</div>`;
+  items += `<div class="sheet-item danger" data-clact="delete">${icon('trash')}حذف</div>`;
+
+  openSheet(`<div class="sheet-title">${esc(c.name)}</div>${items}`);
+
+  $$('#sheet-content [data-clact]').forEach(b => b.addEventListener('click', () => {
+    const act = b.dataset.clact;
+    closeSheet();
+    setTimeout(() => handleChatListAction(act, c), 120);
+  }));
+}
+
+function handleChatListAction(act, c) {
+  if (act === 'open') { openChat(c.id); return; }
+  if (act === 'verified') {
+    c.verified = !c.verified;
+    toast(c.verified ? 'تیک آبی داده شد' : 'تیک آبی برداشته شد');
+    renderChatList(); save();
+    return;
+  }
+  if (act === 'pin') {
+    c.pinned = !c.pinned;
+    toast(c.pinned ? 'سنجاق شد' : 'برداشته شد');
+    renderChatList(); save();
+    return;
+  }
+  if (act === 'mute') {
+    c.muted = !c.muted;
+    toast(c.muted ? 'بی‌صدا شد' : 'اعلان فعال شد');
+    renderChatList(); save();
+    return;
+  }
+  if (act === 'info') { openInfo(c.id); return; }
+  if (act === 'read') {
+    c.unread = 0;
+    renderChatList(); save();
+    toast('خوانده‌شده علامت خورد');
+    return;
+  }
+  if (act === 'delete') {
+    showConfirm('حذف گفتگو', 'کل این گفتگو حذف شود؟', () => {
+      state.chats = state.chats.filter(x => x.id !== c.id);
+      renderChatList(); save();
+      toast('حذف شد');
+    });
+    return;
   }
 }
 
@@ -1419,7 +1360,6 @@ sheetOverlay.addEventListener('click', e => { if (e.target === sheetOverlay) clo
 /* ===================== AVATAR PICKER ===================== */
 let avatarTarget = null;
 let avatarTargetType = null;
-
 function openAvatarPicker(targetType, targetId) {
   avatarTargetType = targetType;
   avatarTarget = targetId;
@@ -1428,27 +1368,23 @@ function openAvatarPicker(targetType, targetId) {
 }
 function closeAvatarPicker() { avatarOverlay.classList.remove('show'); }
 avatarOverlay.addEventListener('click', e => { if (e.target === avatarOverlay) closeAvatarPicker(); });
-
 function getAvatarEntity() {
   if (avatarTargetType === 'me') return state.me;
   if (avatarTargetType === 'chat') return getChat(avatarTarget);
   if (avatarTargetType === 'contact') return state.contacts.find(c => c.id === avatarTarget);
   return null;
 }
-
 function renderAvatarPicker(tab = 'gradient') {
   const entity = getAvatarEntity();
   if (!entity) return;
   const current = entity.avatar || { type: 'gradient', value: 0 };
-
   let body = '';
   if (tab === 'gradient') {
     const curVal = (typeof current.value === 'number') ? current.value : 0;
     body = `<div class="av-grid">` +
       AV_GRADS.map((g, i) => {
         const sel = current.type === 'gradient' && curVal === i ? ' sel' : '';
-        return `<button class="av-color${sel}" data-grad="${i}"
-          style="background:linear-gradient(135deg,${g[0]},${g[1]})"></button>`;
+        return `<button class="av-color${sel}" data-grad="${i}" style="background:linear-gradient(135deg,${g[0]},${g[1]})"></button>`;
       }).join('') + `</div>`;
   } else if (tab === 'emoji') {
     body = `<div class="av-grid" style="grid-template-columns:repeat(6,1fr)">` +
@@ -1457,61 +1393,38 @@ function renderAvatarPicker(tab = 'gradient') {
         return `<button class="${sel}" data-emo="${e}" style="font-size:24px">${e}</button>`;
       }).join('') + `</div>`;
   } else if (tab === 'image') {
-    body = `<div class="av-upload" id="av-upload-btn">
-      ${icon('camera', 22)} انتخاب عکس از گالری
-    </div>
-    <div style="text-align:center;font-size:12px;color:var(--text-3);padding:14px 20px 4px;line-height:1.6">
-      تصویر به صورت خودکار کوچک می‌شود<br>و فقط روی همین دستگاه ذخیره می‌شود
-    </div>`;
+    body = `<div class="av-upload" id="av-upload-btn">${icon('camera', 22)} انتخاب عکس از گالری</div>
+    <div style="text-align:center;font-size:12px;color:var(--text-3);padding:14px 20px 4px;line-height:1.6">تصویر به صورت خودکار کوچک می‌شود<br>و فقط روی همین دستگاه ذخیره می‌شود</div>`;
   }
-
   $('#avatar-panel').innerHTML = `
     <div class="av-tabs">
-      <button data-avtab="gradient" class="${tab === 'gradient' ? 'active' : ''}">
-        ${icon('palette', 20)}رنگ
-      </button>
-      <button data-avtab="emoji" class="${tab === 'emoji' ? 'active' : ''}">
-        ${icon('smile', 20)}ایموجی
-      </button>
-      <button data-avtab="image" class="${tab === 'image' ? 'active' : ''}">
-        ${icon('image', 20)}تصویر
-      </button>
+      <button data-avtab="gradient" class="${tab === 'gradient' ? 'active' : ''}">${icon('palette', 20)}رنگ</button>
+      <button data-avtab="emoji" class="${tab === 'emoji' ? 'active' : ''}">${icon('smile', 20)}ایموجی</button>
+      <button data-avtab="image" class="${tab === 'image' ? 'active' : ''}">${icon('image', 20)}تصویر</button>
     </div>
-    <div class="av-preview">
-      <div class="avatar" style="${avatarBgStyle(entity)}">${avatarContent(entity)}</div>
-    </div>
+    <div class="av-preview"><div class="avatar" style="${avatarBgStyle(entity)}">${avatarContent(entity)}</div></div>
     <div class="av-section">${body}</div>
   `;
-
-  $$('#avatar-panel [data-avtab]').forEach(b =>
-    b.addEventListener('click', () => renderAvatarPicker(b.dataset.avtab)));
-
-  $$('#avatar-panel [data-grad]').forEach(b =>
-    b.addEventListener('click', () => {
-      const idx = parseInt(b.dataset.grad, 10);
-      entity.avatar = { type: 'gradient', value: idx };
-      applyAvatarChange();
-      renderAvatarPicker('gradient');
-    }));
-
-  $$('#avatar-panel [data-emo]').forEach(b =>
-    b.addEventListener('click', () => {
-      entity.avatar = { type: 'emoji', value: b.dataset.emo };
-      applyAvatarChange();
-      renderAvatarPicker('emoji');
-    }));
-
+  $$('#avatar-panel [data-avtab]').forEach(b => b.addEventListener('click', () => renderAvatarPicker(b.dataset.avtab)));
+  $$('#avatar-panel [data-grad]').forEach(b => b.addEventListener('click', () => {
+    const idx = parseInt(b.dataset.grad, 10);
+    entity.avatar = { type: 'gradient', value: idx };
+    applyAvatarChange();
+    renderAvatarPicker('gradient');
+  }));
+  $$('#avatar-panel [data-emo]').forEach(b => b.addEventListener('click', () => {
+    entity.avatar = { type: 'emoji', value: b.dataset.emo };
+    applyAvatarChange();
+    renderAvatarPicker('emoji');
+  }));
   const upBtn = $('#av-upload-btn');
   if (upBtn) upBtn.addEventListener('click', pickImage);
 }
-
 function pickImage() {
   const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
+  inp.type = 'file'; inp.accept = 'image/*';
   inp.onchange = () => {
-    const f = inp.files[0];
-    if (!f) return;
+    const f = inp.files[0]; if (!f) return;
     resizeImage(f, 320, dataUrl => {
       const entity = getAvatarEntity();
       if (!entity) return;
@@ -1521,7 +1434,6 @@ function pickImage() {
   };
   inp.click();
 }
-
 function resizeImage(file, maxSize, cb) {
   const reader = new FileReader();
   reader.onload = () => {
@@ -1530,84 +1442,45 @@ function resizeImage(file, maxSize, cb) {
       const canvas = document.createElement('canvas');
       let w = img.width, h = img.height;
       const ratio = Math.min(maxSize / w, maxSize / h, 1);
-      w = Math.round(w * ratio);
-      h = Math.round(h * ratio);
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
+      w = Math.round(w * ratio); h = Math.round(h * ratio);
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       cb(canvas.toDataURL('image/jpeg', 0.85));
     };
     img.src = reader.result;
   };
   reader.readAsDataURL(file);
 }
-
 function applyAvatarChange() {
   save();
-  if (avatarTargetType === 'me') {
-    renderSettings(); renderChatList();
-  } else if (avatarTargetType === 'chat') {
+  if (avatarTargetType === 'me') { renderSettings(); renderChatList(); }
+  else if (avatarTargetType === 'chat') {
     renderChatList();
     if (activeChatId === avatarTarget) renderChatHeader();
     if (infoChatId === avatarTarget) renderInfo();
-  } else if (avatarTargetType === 'contact') {
-    renderContacts();
-  }
+  } else if (avatarTargetType === 'contact') renderContacts();
   toast('ذخیره شد');
 }
 
-/* ===================== EMOJI PICKER ===================== */
+/* ===================== EMOJI ===================== */
 const EMOJI_CATEGORIES = {
-  smileys: {
-    name: 'شکلک‌ها', icon: '😀',
-    emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥺','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥱','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖']
-  },
-  gestures: {
-    name: 'اشاره‌ها', icon: '👍',
-    emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','💋']
-  },
-  hearts: {
-    name: 'قلب و عشق', icon: '❤️',
-    emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💌','💋','😍','🥰','😘','💑','💏','👩‍❤️‍👨','👨‍❤️‍👨','👩‍❤️‍👩','💐','🌹','🌷','🌺','🌸','🎁','✨','💫','⭐','🌟','🌙','☀️','🌈']
-  },
-  animals: {
-    name: 'حیوانات', icon: '🐶',
-    emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🕸️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔']
-  },
-  food: {
-    name: 'غذا', icon: '🍔',
-    emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾','🧊']
-  },
-  travel: {
-    name: 'سفر', icon: '✈️',
-    emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🛴','🚲','🛵','🏍️','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','💺','🛰️','🚀','🛸','🚁','🛶','⛵','🚤','🛥️','🛳️','⛴️','🚢','⚓','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺','🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️','🌅','🌄','🌠','🎇','🎆','🌇','🌆','🏙️','🌃','🌌','🌉','🌁']
-  },
-  activities: {
-    name: 'فعالیت‌ها', icon: '⚽',
-    emojis: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🎻','🎲','🎯','🎳','🎮','🎰','🧩']
-  },
-  objects: {
-    name: 'اشیا', icon: '💡',
-    emojis: ['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','🕹️','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🎙️','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🛢️','💸','💵','💴','💶','💷','🪙','💰','💳','💎','⚖️','🧰','🔧','🔨','🛠️','⛏️','🔩','⚙️','🧱','⛓️','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🩹','🩺','💊','💉','🧬','🦠','🧪','🌡️','🧹','🧺','🧻','🚽','🚰','🚿','🛁','🧼','🪥','🪒','🧽','🧴','🛎️','🔑','🗝️','🚪','🪑','🛋️','🛏️','🧸','🖼️','🛍️','🛒','🎁','🎈','🎏','🎀','🎊','🎉','🏮','🎐','🧧','✉️','📩','📨','📧','💌','📥','📤','📦','🏷️','📪','📫','📬','📭','📮','📜','📃','📄','📑','🧾','📊','📈','📉','📆','📅','🗑️','📋','📁','📂','📰','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🔗','📎','📐','📏','📌','📍','✂️','🖊️','🖋️','✒️','🖌️','🖍️','📝','✏️','🔍','🔎','🔏','🔐','🔒','🔓']
-  },
-  symbols: {
-    name: 'نمادها', icon: '💯',
-    emojis: ['☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🚹','🚺','🚼','🚻','🚮','🎦','📶','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','▶️','⏸️','⏯️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♦️','🃏','🎴','🀄','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛']
-  },
-  flags: {
-    name: 'پرچم‌ها', icon: '🏁',
-    emojis: ['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏴‍☠️','🇮🇷','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇷🇺','🇨🇳','🇯🇵','🇰🇷','🇮🇳','🇹🇷','🇸🇦','🇦🇪','🇮🇶','🇵🇰','🇦🇫','🇪🇬','🇧🇷','🇨🇦','🇦🇺','🇲🇽','🇳🇱','🇧🇪','🇸🇪','🇳🇴','🇩🇰','🇫🇮','🇵🇱','🇺🇦','🇬🇷','🇵🇹','🇨🇭','🇦🇹','🇮🇪','🇳🇿','🇿🇦','🇦🇷','🇨🇱','🇨🇴','🇵🇪','🇻🇪','🇺🇾','🇵🇾','🇧🇴','🇪🇨']
-  }
+  smileys: { name: 'شکلک‌ها', icon: '😀', emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥺','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥱','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'] },
+  gestures: { name: 'اشاره‌ها', icon: '👍', emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','💋'] },
+  hearts: { name: 'قلب', icon: '❤️', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💌','💋','😍','🥰','😘','💑','💏','💐','🌹','🌷','🌺','🌸','🎁','✨','💫','⭐','🌟','🌙','☀️','🌈'] },
+  animals: { name: 'حیوانات', icon: '🐶', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🕷️','🐢','🐍','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🐘','🦛','🦏','🐪','🐫','🦒','🐕','🐈','🐓','🦃','🦚','🦜','🦢','🕊️','🐇','🦝','🦔'] },
+  food: { name: 'غذا', icon: '🍔', emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🌽','🥕','🥔','🥐','🍞','🥖','🥨','🧀','🥚','🍳','🥞','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🌮','🌯','🥗','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🍤','🍙','🍚','🍘','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🍯','🥛','🍼','☕','🍵','🍺','🍻','🥂','🍷','🍸','🍹','🍾'] },
+  travel: { name: 'سفر', icon: '✈️', emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛','🚜','🚲','🛵','🏍️','🚨','🚔','🚘','🚖','🚡','🚠','🚃','🚄','🚅','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','💺','🛰️','🚀','🛸','🚁','⛵','🚤','🛳️','⛴️','🚢','⚓','⛽','🚧','🚦','🗺️','🗿','🗽','🗼','🏰','🏯','🎡','🎢','🎠','⛲','🏖️','🏝️','🌋','⛰️','🏔️','🏕️','⛺','🏠','🏡','🏢','🏬','🏥','🏦','🏨','🏪','🏫','💒','⛪','🕌','🌅','🌄','🌇','🌆','🌃','🌉'] },
+  activities: { name: 'ورزش', icon: '⚽', emojis: ['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🏒','🏑','🏏','⛳','🏹','🎣','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🎿','⛷️','🏂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🎫','🎪','🤹','🎭','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🎻','🎲','🎯','🎳','🎮','🎰','🧩'] },
+  objects: { name: 'اشیا', icon: '💡', emojis: ['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','💽','💾','💿','📀','📷','📸','📹','🎥','📞','☎️','📟','📠','📺','📻','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','💸','💵','💴','💶','💷','💰','💳','💎','⚖️','🔧','🔨','🛠️','🔩','⚙️','🧱','⛓️','🧲','🔫','💣','🧨','🔪','🗡️','⚔️','🛡️','🏺','🔮','📿','🧿','💈','🔭','🔬','🩹','🩺','💊','💉','🧬','🦠','🧪','🧹','🧺','🧻','🚽','🚰','🚿','🛁','🧼','🪥','🪒','🧽','🧴','🔑','🗝️','🚪','🪑','🛋️','🛏️','🧸','🖼️','🛍️','🛒','🎁','🎈','🎀','🎊','🎉','🏮','✉️','📩','📨','📧','💌','📥','📤','📦','📜','📃','📄','📑','🧾','📊','📈','📉','📆','📅','🗑️','📋','📁','📂','📰','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🔗','📎','📐','📏','📌','📍','✂️','🖊️','🖋️','✒️','🖌️','🖍️','📝','✏️','🔍','🔎','🔏','🔐','🔒','🔓'] },
+  symbols: { name: 'نمادها', icon: '💯', emojis: ['☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🚹','🚺','🚼','🚻','🚮','🎦','📶','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','▶️','⏸️','⏯️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♦️','🃏','🎴','🀄','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛'] },
+  flags: { name: 'پرچم‌ها', icon: '🏁', emojis: ['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏴‍☠️','🇮🇷','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇷🇺','🇨🇳','🇯🇵','🇰🇷','🇮🇳','🇹🇷','🇸🇦','🇦🇪','🇮🇶','🇵🇰','🇦🇫','🇪🇬','🇧🇷','🇨🇦','🇦🇺','🇲🇽','🇳🇱','🇧🇪','🇸🇪','🇳🇴','🇩🇰','🇫🇮','🇵🇱','🇺🇦','🇬🇷','🇵🇹','🇨🇭','🇦🇹','🇮🇪','🇳🇿','🇿🇦','🇦🇷','🇨🇱','🇨🇴','🇵🇪','🇻🇪','🇺🇾','🇵🇾','🇧🇴','🇪🇨'] }
 };
 
 let emojiActiveCat = 'smileys';
-
 function openEmoji() {
   if (!$('#emoji-panel').innerHTML) renderEmojiPanel();
   emojiOverlay.classList.add('show');
 }
-
 function renderEmojiPanel() {
   const cats = Object.keys(EMOJI_CATEGORIES);
   const panel = $('#emoji-panel');
@@ -1625,7 +1498,6 @@ function renderEmojiPanel() {
       </div>
     </div>
   `;
-
   $$('#emoji-cats [data-cat]').forEach(btn => {
     btn.addEventListener('click', () => {
       emojiActiveCat = btn.dataset.cat;
@@ -1642,10 +1514,8 @@ function renderEmojiPanel() {
       bindEmojiClicks(scroll);
     });
   });
-
   bindEmojiClicks($('#emoji-scroll'));
 }
-
 function bindEmojiClicks(scope) {
   $$('[data-emoji]', scope).forEach(b => {
     b.addEventListener('click', () => {
@@ -1654,7 +1524,6 @@ function bindEmojiClicks(scope) {
     });
   });
 }
-
 $('#btn-emoji').addEventListener('click', openEmoji);
 emojiOverlay.addEventListener('click', e => { if (e.target === emojiOverlay) emojiOverlay.classList.remove('show'); });
 
@@ -1839,7 +1708,6 @@ function promptChatName(type) {
     createChat({ name: 'پیام‌های ذخیره‌شده', type: 'saved' });
     return;
   }
-
   showPrompt(titles[type], '', val => {
     const name = val.trim();
     if (!name) { toast('نام نمی‌تونه خالی باشه'); return; }
@@ -1851,7 +1719,6 @@ function promptChatName(type) {
       isPublic: type === 'channel'
     };
     if (type === 'private') { data.online = true; }
-
     if (type === 'group' || type === 'channel') {
       const defaultCount = type === 'group' ? '4' : '100';
       setTimeout(() => {
@@ -1868,7 +1735,6 @@ function promptChatName(type) {
       }, 220);
       return;
     }
-
     finishCreateChat(data, type);
   });
 }
@@ -1915,19 +1781,14 @@ function finishCreateChat(data, type) {
   createChat(data);
   if (type === 'private') {
     const id = state.chats[state.chats.length - 1].id;
-    state.contacts.push({
-      id, name: data.name,
-      avatar: data.avatar,
-      verified: false
-    });
+    state.contacts.push({ id, name: data.name, avatar: data.avatar, verified: false });
     save(); renderContacts();
   }
 }
 
 function createChat(data) {
   const chat = Object.assign({
-    id: rid(),
-    unread: 0, pinned: false, muted: false,
+    id: rid(), unread: 0, pinned: false, muted: false,
     messages: [], createdAt: Date.now()
   }, data);
   state.chats.push(chat);
@@ -1945,14 +1806,12 @@ $('#settings-body').addEventListener('click', e => {
       if (!v.trim()) return;
       state.me.name = v.trim(); renderSettings(); renderChatList(); save(); toast('ذخیره شد');
     });
-
     if (act === 'edit-phone') {
       const currentPhone = state.me.phone || '+98 ';
       showPrompt('شماره تلفن', currentPhone, v => {
         let num = v.trim();
-        if (!num || num === '+98') {
-          state.me.phone = '';
-        } else {
+        if (!num || num === '+98') { state.me.phone = ''; }
+        else {
           if (!num.startsWith('+98')) {
             num = num.replace(/^\+?9?8?\s*/, '').replace(/\D/g, '');
             num = '+98 ' + num;
@@ -1960,11 +1819,9 @@ $('#settings-body').addEventListener('click', e => {
           num = num.replace(/^(\+98)\s*(\d{3})\s*(\d{3})\s*(\d{4}).*$/, '$1 $2 $3 $4');
           state.me.phone = num;
         }
-        renderSettings(); save();
-        toast('ذخیره شد');
+        renderSettings(); save(); toast('ذخیره شد');
       }, { ltr: true, placeholder: '+98 912 345 6789' });
     }
-
     if (act === 'export') {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -1995,19 +1852,16 @@ $('#settings-body').addEventListener('click', e => {
     if (act === 'reset') {
       showConfirm('پاک کردن همه داده‌ها', 'تمام گفتگوها و تنظیمات حذف شوند؟', () => {
         localStorage.removeItem(KEY);
-        localStorage.removeItem(COLOR_FIX_KEY);
         state = defaultState();
         renderChatList(); renderSettings(); renderContacts();
         toast('پاک شد');
       });
     }
   }
-
   if (e.target.closest('#my-avatar-btn') || e.target.closest('#btn-edit-profile')) {
     openAvatarPicker('me', null);
     return;
   }
-
   const sw = e.target.closest('input[data-set]');
   if (sw) {
     const key = sw.dataset.set;
@@ -2074,16 +1928,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ===================== SPLASH + UPDATE ===================== */
-function hideSplash() {
-  const s = $('#splash');
-  if (!s) return;
-  setTimeout(() => {
-    s.classList.add('hide');
-    setTimeout(() => s.remove(), 700);
-  }, 1500);
-}
-
+/* ===================== UPDATE ===================== */
 function showUpdateNotification() {
   const overlay = $('#update-overlay');
   if (!overlay) return;
@@ -2095,14 +1940,13 @@ function showUpdateNotification() {
     </div>
   `).join('');
   $('#update-version').textContent = APP_VERSION;
-  setTimeout(() => overlay.classList.add('show'), 2200);
+  setTimeout(() => overlay.classList.add('show'), 800);
   $('#update-ok').addEventListener('click', () => {
     overlay.classList.remove('show');
     try { localStorage.setItem(VERSION_KEY, APP_VERSION); } catch {}
     setTimeout(() => { overlay.style.display = 'none'; }, 400);
   });
 }
-
 function checkVersionAndNotify() {
   let savedVersion = null;
   try { savedVersion = localStorage.getItem(VERSION_KEY); } catch {}
@@ -2121,7 +1965,6 @@ renderChatList();
 renderContacts();
 renderSettings();
 
-hideSplash();
 checkVersionAndNotify();
 
 window.addEventListener('online', () => {
