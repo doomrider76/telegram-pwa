@@ -1,5 +1,5 @@
 /* =========================================================
-   پیسفون v1.10 beta — Modern 2025 + Fullscreen + Tabbar Fix v2
+   پیسفون v1.10 beta — Modern 2025 + Fullscreen + Tabbar Fix v3
    ========================================================= */
 
 :root{
@@ -73,19 +73,6 @@ html,body{
   background:#000;
   display:flex;
   flex-direction:column;
-}
-
-/* ═══════════════ پس‌زمینه ثابت پایین صفحه ═══════════════ */
-#app::after{
-  content:"";
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  height:calc(56px + env(safe-area-inset-bottom, 0px) + 20px);
-  background:#0a0a0f;
-  z-index:4;
-  pointer-events:none;
 }
 
 button,input,textarea{font-family:inherit;color:inherit;font-size:inherit}
@@ -316,7 +303,6 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 }
 .searchbar input::placeholder{color:var(--text-3)}
 
-/* فاصله انتهای لیست برای FAB و تب‌بار */
 .list{flex:1;padding-bottom:180px;padding-top:4px}
 
 /* ===== CHAT ITEM ===== */
@@ -408,7 +394,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
 .fab svg{fill:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 
 /* ═══════════════════════════════════════════════════════════
-   TABBAR — چسبیده به لبه فیزیکی، بدون هیچ فاصله
+   TABBAR — پس‌زمینه solid تا لبه فیزیکی
    ═══════════════════════════════════════════════════════════ */
 .tabbar{
   display:flex;
@@ -416,21 +402,15 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   width:100%;
   margin:0;
   padding:0;
-  padding-bottom:env(safe-area-inset-bottom, 0px);
-  background:transparent; /* پس‌زمینه از #app::after میاد */
-  border:none;
+  background:#0a0a0f;
+  border-top:1px solid rgba(255,255,255,.08);
   position:relative;
-  z-index:6;
-}
-
-/* خط ظریف بالای تب‌بار */
-.tabbar::before{
-  content:"";
-  position:absolute;
-  top:0;left:0;right:0;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
-  pointer-events:none;
+  z-index:100;
+  min-height:calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  padding-bottom:max(env(safe-area-inset-bottom, 0px), 0px);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
 }
 
 .tabbar button{
@@ -438,6 +418,7 @@ button svg{fill:currentColor;display:block;flex-shrink:0}
   display:flex;
   flex-direction:column;
   align-items:center;
+  justify-content:flex-start;
   gap:3px;
   padding:10px 0 8px;
   font-size:10px;
