@@ -8,17 +8,38 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const icon = (name, size = 20) => `<svg width="${size}" height="${size}"><use href="#i-${name}"/></svg>`;
 const KEY = 'pisfon_v3';
+const COLOR_FIX_KEY = 'pisfon_color_fix_v1';
+
+/* ===================== VIEWPORT FIX ===================== */
+function setViewport() {
+  const h = window.innerHeight;
+  const w = window.innerWidth;
+  const root = document.documentElement;
+  root.style.setProperty('--vh', (h * 0.01) + 'px');
+  root.style.setProperty('--vw', (w * 0.01) + 'px');
+  root.style.setProperty('--app-h', h + 'px');
+}
+setViewport();
+window.addEventListener('resize', setViewport);
+window.addEventListener('orientationchange', () => setTimeout(setViewport, 200));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setViewport);
+  window.visualViewport.addEventListener('scroll', setViewport);
+}
+document.addEventListener('focusin', () => setTimeout(setViewport, 300));
+document.addEventListener('focusout', () => setTimeout(setViewport, 300));
 
 /* ===================== VERSION ===================== */
 const APP_VERSION = '1.10 beta';
 const VERSION_KEY = 'pisfon_version';
 const CHANGELOG = [
-  'باکس پیام‌ها با طراحی سه‌بعدی و گرادیانت زیبا',
+  'فیکس پالت رنگ پروفایل — الان هر ۱۲ رنگ درست کار می‌کنه',
+  'شماره تلفن با پیشوند +98 و چپ‌چین (LTR)',
+  'دیزاین مدرن ۲۰۲۵',
+  'فیکس موقعیت باکس‌ها روی هر گوشی و مانیتور',
   'آواتار فرستنده کنار پیام در گروه (مثل تلگرام)',
   'در گروه‌ها، هوش مصنوعی با پروفایل هر عضو جواب می‌ده',
-  'گروه پیش‌فرض «خانواده» با ۴ عضو نمونه',
-  'بهبود سایه‌ها و عمق پیام‌های ارسالی و دریافتی',
-  'انیمیشن لود نرم + اعلان بروزرسانی',
+  'باکس پیام‌ها با طراحی سه‌بعدی',
   'دستیار پیسفون با هوش مصنوعی رایگان',
   'تیک آبی، آیدی و عمومی/خصوصی',
   'ایموجی پیکر با ۹ دسته‌بندی'
@@ -37,7 +58,6 @@ const AV_EMOJIS = [
   '🌸','🌺','🌈','⚡','💎','🔥','⭐','🎯','🚀','🎨','🎵','📷','🍕','☕','🍀','🌟'
 ];
 
-/* پول اسم‌ها و ایموجی‌ها برای اعضای گروه */
 const GROUP_MEMBER_POOL = [
   { name: 'علی', avatar: { type: 'emoji', value: '🧑' } },
   { name: 'سارا', avatar: { type: 'emoji', value: '👩' } },
@@ -94,7 +114,7 @@ function defaultState() {
   return {
     me: {
       name: 'من',
-      phone: '',
+      phone: '+98 ',
       avatar: { type: 'gradient', value: 3 },
       verified: true
     },
@@ -149,26 +169,10 @@ function defaultState() {
         unread: 0, pinned: false, muted: false,
         createdAt: now - 86400000,
         messages: [
-          {
-            id: rid(), out: false, ts: now - 7200000,
-            type: 'text', sender: 'مامان',
-            text: 'سلام بچه‌ها 👋 امروز کجا بریم؟'
-          },
-          {
-            id: rid(), out: false, ts: now - 7100000,
-            type: 'text', sender: 'بابا',
-            text: 'من پایه‌ام، هرجا بگید میام 🚗'
-          },
-          {
-            id: rid(), out: false, ts: now - 6900000,
-            type: 'text', sender: 'سارا',
-            text: 'پارک نزدیک خونه خوبه 🌳'
-          },
-          {
-            id: rid(), out: false, ts: now - 600000,
-            type: 'text', sender: 'رضا',
-            text: 'منم موافقم! ساعت ۵ بریم؟'
-          }
+          { id: rid(), out: false, ts: now - 7200000, type: 'text', sender: 'مامان', text: 'سلام بچه‌ها 👋 امروز کجا بریم؟' },
+          { id: rid(), out: false, ts: now - 7100000, type: 'text', sender: 'بابا', text: 'من پایه‌ام، هرجا بگید میام 🚗' },
+          { id: rid(), out: false, ts: now - 6900000, type: 'text', sender: 'سارا', text: 'پارک نزدیک خونه خوبه 🌳' },
+          { id: rid(), out: false, ts: now - 600000, type: 'text', sender: 'رضا', text: 'منم موافقم! ساعت ۵ بریم؟' }
         ]
       },
       {
@@ -208,30 +212,38 @@ function load() {
     if (!Array.isArray(s.contacts)) s.contacts = [];
     if (!s.me.avatar) s.me.avatar = { type: 'gradient', value: 3 };
     if (typeof s.me.verified !== 'boolean') s.me.verified = true;
-    s.chats.forEach(c => {
-      if (!c.avatar) c.avatar = { type: 'gradient', value: 0 };
+    if (!s.me.phone) s.me.phone = '+98 ';
+
+    // Migration برای رنگ‌های تکراری
+    const needsColorFix = !localStorage.getItem(COLOR_FIX_KEY);
+    s.chats.forEach((c, i) => {
+      if (!c.avatar) c.avatar = { type: 'gradient', value: i % AV_GRADS.length };
       if (typeof c.verified !== 'boolean') c.verified = false;
       if (typeof c.username !== 'string') c.username = '';
       if (typeof c.isPublic !== 'boolean') c.isPublic = c.type === 'channel';
       if ((c.type === 'group' || c.type === 'channel') && typeof c.members !== 'number') {
         c.members = c.type === 'group' ? 1 : 0;
       }
-      // مهاجرت: اگه گروه membersList نداره ولی memberNames داره
+      // فیکس رنگ‌های تکراری
+      if (needsColorFix && c.avatar && c.avatar.type === 'gradient') {
+        c.avatar.value = i % AV_GRADS.length;
+      }
+      // مهاجرت membersList
       if (c.type === 'group' && !c.membersList) {
         c.membersList = (c.memberNames || []).map(n => {
           const pool = GROUP_MEMBER_POOL.find(p => p.name === n);
           if (pool) return { ...pool };
-          return {
-            name: n,
-            avatar: { type: 'gradient', value: 0 }
-          };
+          return { name: n, avatar: { type: 'gradient', value: 0 } };
         });
       }
     });
-    s.contacts.forEach(c => {
-      if (!c.avatar) c.avatar = { type: 'gradient', value: 0 };
+    s.contacts.forEach((c, i) => {
+      if (!c.avatar) c.avatar = { type: 'gradient', value: i % AV_GRADS.length };
       if (typeof c.verified !== 'boolean') c.verified = false;
     });
+    if (needsColorFix) {
+      try { localStorage.setItem(COLOR_FIX_KEY, '1'); } catch {}
+    }
     return s;
   } catch { return null; }
 }
@@ -251,7 +263,6 @@ function hashInt(str, mod) {
   return Math.abs(h) % mod;
 }
 
-/* رنگ یگانه بر اساس نام (HSL) — جلوگیری از تداخل رنگی بین کانال‌ها */
 function nameColorPair(name) {
   const n = String(name || 'x');
   let h = 0;
@@ -269,26 +280,36 @@ function initials(name) {
   return parts[0][0] + parts[1][0];
 }
 
+/* ========== AVATAR — FIXED ========== */
 function avatarHTML(entity, size = 54) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
   const dim = (size === 38 || size === 40) ? ' sm' : (size >= 86 ? ' big' : '');
   const klass = `avatar${dim}`;
-  const [c1, c2] = nameColorPair(entity.name);
+  if (av.type === 'image') {
+    return `<div class="${klass}" style="background-image:url('${av.value}');background-size:cover;background-position:center"></div>`;
+  }
+  if (av.type === 'gradient') {
+    const g = AV_GRADS[(av.value || 0) % AV_GRADS.length];
+    return `<div class="${klass}" style="background:linear-gradient(135deg,${g[0]},${g[1]})">${esc(initials(entity.name))}</div>`;
+  }
   if (av.type === 'emoji') {
+    const [c1, c2] = nameColorPair(entity.name);
     return `<div class="${klass}" style="background:linear-gradient(135deg,${c1},${c2})">${av.value}</div>`;
   }
-  if (av.type === 'image') {
-    return `<div class="${klass}" style="background-image:url('${av.value}')"></div>`;
-  }
+  const [c1, c2] = nameColorPair(entity.name);
   return `<div class="${klass}" style="background:linear-gradient(135deg,${c1},${c2})">${esc(initials(entity.name))}</div>`;
 }
 
 function avatarBgStyle(entity) {
   const av = entity.avatar || { type: 'gradient', value: 0 };
-  const [c1, c2] = nameColorPair(entity.name);
   if (av.type === 'image') {
     return `background-image:url('${av.value}');background-size:cover;background-position:center`;
   }
+  if (av.type === 'gradient') {
+    const g = AV_GRADS[(av.value || 0) % AV_GRADS.length];
+    return `background:linear-gradient(135deg,${g[0]},${g[1]})`;
+  }
+  const [c1, c2] = nameColorPair(entity.name);
   return `background:linear-gradient(135deg,${c1},${c2})`;
 }
 
@@ -433,7 +454,7 @@ function renderSettings() {
       <div class="avatar big" id="my-avatar-btn" style="${avatarBgStyle(me)}">${avatarContent(me)}</div>
       <div style="text-align:center">
         <div class="pn">${nameWithVf(me.name, me.verified, 20)}</div>
-        <div class="pp">${me.phone ? esc(me.phone) : 'شماره ثبت نشده'}</div>
+        <div class="pp" dir="ltr" style="text-align:center">${me.phone ? esc(me.phone) : 'شماره ثبت نشده'}</div>
       </div>
     </div>
     <div class="section-title">حساب کاربری</div>
@@ -447,7 +468,7 @@ function renderSettings() {
       <div class="row" data-act="edit-phone">
         <span class="r-icon">${icon('phone', 20)}</span>
         <span class="r-text">شماره تلفن</span>
-        <span class="r-val">${me.phone ? esc(me.phone) : '—'}</span>
+        <span class="r-val" dir="ltr">${me.phone ? esc(me.phone) : '—'}</span>
         <span class="chev">${icon('chevron', 18)}</span>
       </div>
       <div class="row">
@@ -540,7 +561,6 @@ function msgHTML(chat, m, prevMsg, nextMsg) {
     }
   }
 
-  // هدر کانال
   if (chat.type === 'channel') {
     const chAv = avatarContent(chat);
     const chBg = avatarBgStyle(chat);
@@ -586,7 +606,6 @@ function msgHTML(chat, m, prevMsg, nextMsg) {
 
   const msgInner = `${inner}<div class="meta"><span>${fmtTime(m.ts)}</span>${ticks}</div>`;
 
-  // ============ GROUP: آواتار + اسم ============
   if (chat.type === 'group' && !m.out) {
     const senderName = m.sender || 'عضو';
     const sameSenderBefore = prevMsg && !prevMsg.out && prevMsg.sender === senderName;
@@ -770,7 +789,6 @@ function renderInfo() {
     stats = `<div class="info-stat">${icon(navigator.onLine ? 'sparkle' : 'chat', 16)} ${navigator.onLine ? 'آنلاین — پاسخ هوشمند' : 'آفلاین — پاسخ آماده'}</div>`;
   }
 
-  // لیست اعضای گروه
   let membersList = '';
   if (c.type === 'group' && c.membersList && c.membersList.length) {
     membersList = `
@@ -1000,18 +1018,16 @@ function sendMessage(extra = {}, textOverride) {
   }
 }
 
-/* ===================== AI REPLY (تک چت + گروه) ===================== */
+/* ===================== AI REPLY ===================== */
 async function scheduleAIReply(chat, userMsg) {
   const c = getChat(chat.id);
   if (!c) return;
 
   await new Promise(r => setTimeout(r, 500 + Math.random() * 600));
 
-  // === گروه ===
   if (chat.type === 'group') {
     const members = c.membersList || [];
     if (!members.length) return;
-
     const numRepliers = Math.random() > 0.5 ? 2 : 1;
     const shuffled = members.slice().sort(() => Math.random() - 0.5);
     const repliers = shuffled.slice(0, Math.min(numRepliers, members.length));
@@ -1044,8 +1060,7 @@ async function scheduleAIReply(chat, userMsg) {
       c.typingSender = null;
       c.messages.push({
         id: rid(), text: replyText, out: false, ts: Date.now(),
-        type: 'text', replyTo: null,
-        sender: member.name
+        type: 'text', replyTo: null, sender: member.name
       });
       if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
       if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
@@ -1056,7 +1071,6 @@ async function scheduleAIReply(chat, userMsg) {
     return;
   }
 
-  // === چت خصوصی / AI ===
   c.typing = true;
   if (activeChatId === c.id) { renderChatHeader(); renderMessages(); }
   save();
@@ -1141,8 +1155,7 @@ setInterval(() => {
   }
   c.messages.push({
     id: rid(), text: AMBIENT[Math.floor(Math.random() * AMBIENT.length)],
-    out: false, ts: Date.now(), type: 'text', replyTo: null,
-    sender
+    out: false, ts: Date.now(), type: 'text', replyTo: null, sender
   });
   if (activeChatId !== c.id) c.unread = (c.unread || 0) + 1;
   if (activeChatId === c.id) renderMessages();
@@ -1353,7 +1366,7 @@ function openSheet(html) {
 function closeSheet() { sheetOverlay.classList.remove('show'); }
 sheetOverlay.addEventListener('click', e => { if (e.target === sheetOverlay) closeSheet(); });
 
-/* ===================== AVATAR PICKER ===================== */
+/* ===================== AVATAR PICKER — FIXED ============= */
 let avatarTarget = null;
 let avatarTargetType = null;
 
@@ -1380,9 +1393,11 @@ function renderAvatarPicker(tab = 'gradient') {
 
   let body = '';
   if (tab === 'gradient') {
+    // ✅ FIX: مقدار پیش‌فرض اگه نباشه، 0 در نظر گرفته می‌شه
+    const curVal = (typeof current.value === 'number') ? current.value : 0;
     body = `<div class="av-grid">` +
       AV_GRADS.map((g, i) => {
-        const sel = current.type === 'gradient' && current.value === i ? ' sel' : '';
+        const sel = current.type === 'gradient' && curVal === i ? ' sel' : '';
         return `<button class="av-color${sel}" data-grad="${i}"
           style="background:linear-gradient(135deg,${g[0]},${g[1]})"></button>`;
       }).join('') + `</div>`;
@@ -1396,7 +1411,7 @@ function renderAvatarPicker(tab = 'gradient') {
     body = `<div class="av-upload" id="av-upload-btn">
       ${icon('camera', 22)} انتخاب عکس از گالری
     </div>
-    <div style="text-align:center;font-size:12px;color:var(--text2);padding:14px 20px 4px;line-height:1.6">
+    <div style="text-align:center;font-size:12px;color:var(--text-3);padding:14px 20px 4px;line-height:1.6">
       تصویر به صورت خودکار کوچک می‌شود<br>و فقط روی همین دستگاه ذخیره می‌شود
     </div>`;
   }
@@ -1421,15 +1436,22 @@ function renderAvatarPicker(tab = 'gradient') {
 
   $$('#avatar-panel [data-avtab]').forEach(b =>
     b.addEventListener('click', () => renderAvatarPicker(b.dataset.avtab)));
+
+  // ✅ FIX: کلیک روی هر رنگ، مقدارش رو ذخیره می‌کنه
   $$('#avatar-panel [data-grad]').forEach(b =>
     b.addEventListener('click', () => {
-      entity.avatar = { type: 'gradient', value: parseInt(b.dataset.grad) };
+      const idx = parseInt(b.dataset.grad, 10);
+      entity.avatar = { type: 'gradient', value: idx };
       applyAvatarChange();
+      // Re-render picker برای نمایش انتخاب جدید
+      renderAvatarPicker('gradient');
     }));
+
   $$('#avatar-panel [data-emo]').forEach(b =>
     b.addEventListener('click', () => {
       entity.avatar = { type: 'emoji', value: b.dataset.emo };
       applyAvatarChange();
+      renderAvatarPicker('emoji');
     }));
 
   const upBtn = $('#av-upload-btn');
@@ -1484,25 +1506,6 @@ function applyAvatarChange() {
     if (infoChatId === avatarTarget) renderInfo();
   } else if (avatarTargetType === 'contact') {
     renderContacts();
-  }
-  const entity = getAvatarEntity();
-  if (entity) {
-    const prev = $('#avatar-panel .av-preview .avatar');
-    if (prev) {
-      prev.textContent = avatarContent(entity);
-      const style = avatarBgStyle(entity);
-      prev.setAttribute('style', style + ';width:96px;height:96px;font-size:42px;');
-    }
-    $$('#avatar-panel [data-grad], #avatar-panel [data-emo]').forEach(b => b.classList.remove('sel'));
-    const cur = entity.avatar || {};
-    if (cur.type === 'gradient') {
-      const b = $(`#avatar-panel [data-grad="${cur.value}"]`);
-      if (b) b.classList.add('sel');
-    }
-    if (cur.type === 'emoji') {
-      const b = $(`#avatar-panel [data-emo="${cur.value}"]`);
-      if (b) b.classList.add('sel');
-    }
   }
   toast('ذخیره شد');
 }
@@ -1691,7 +1694,6 @@ $('#btn-chat-menu').addEventListener('click', () => {
   }));
 });
 
-/* ===================== CALL ===================== */
 $('#btn-call').addEventListener('click', () => toast('در نسخه آفلاین پشتیبانی نمی‌شود'));
 
 $('#chat-name').addEventListener('click', () => {
@@ -1747,8 +1749,7 @@ $('#contacts-list').addEventListener('click', e => {
     chat = {
       id: c.id, name: c.name, type: 'private',
       avatar: c.avatar, verified: c.verified,
-      username: '',
-      online: Math.random() > .5,
+      username: '', online: Math.random() > .5,
       unread: 0, pinned: false, muted: false, messages: [], createdAt: Date.now()
     };
     state.chats.push(chat); save();
@@ -1797,7 +1798,7 @@ function promptChatName(type) {
     if (!name) { toast('نام نمی‌تونه خالی باشه'); return; }
     const data = {
       name, type,
-      avatar: { type: 'gradient', value: 0 },
+      avatar: { type: 'gradient', value: Math.floor(Math.random() * AV_GRADS.length) },
       verified: false,
       username: '',
       isPublic: type === 'channel'
@@ -1832,14 +1833,14 @@ function askPublicOrPrivate(data, type) {
       ${icon('globe')}
       <div style="flex:1">
         <div style="font-weight:600">عمومی</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">هر کسی می‌تواند پیدا کند</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">هر کسی می‌تواند پیدا کند</div>
       </div>
     </div>
     <div class="sheet-item" data-pp="private">
       ${icon('lock')}
       <div style="flex:1">
         <div style="font-weight:600">خصوصی</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">فقط با دعوت‌نامه</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">فقط با دعوت‌نامه</div>
       </div>
     </div>
   `);
@@ -1878,7 +1879,9 @@ function finishCreateChat(data, type) {
 
 function createChat(data) {
   const chat = Object.assign({
-    id: rid(), unread: 0, pinned: false, muted: false, messages: [], createdAt: Date.now()
+    id: rid(),
+    unread: 0, pinned: false, muted: false,
+    messages: [], createdAt: Date.now()
   }, data);
   state.chats.push(chat);
   save(); renderChatList();
@@ -1895,9 +1898,29 @@ $('#settings-body').addEventListener('click', e => {
       if (!v.trim()) return;
       state.me.name = v.trim(); renderSettings(); renderChatList(); save(); toast('ذخیره شد');
     });
-    if (act === 'edit-phone') showPrompt('شماره تلفن', state.me.phone, v => {
-      state.me.phone = v.trim(); renderSettings(); save(); toast('ذخیره شد');
-    });
+
+    // ✅ FIX: شماره تلفن با +98 و LTR
+    if (act === 'edit-phone') {
+      const currentPhone = state.me.phone || '+98 ';
+      showPrompt('شماره تلفن', currentPhone, v => {
+        let num = v.trim();
+        if (!num || num === '+98') {
+          state.me.phone = '';
+        } else {
+          // اگه با +98 شروع نشد، اضافه کن
+          if (!num.startsWith('+98')) {
+            num = num.replace(/^\+?9?8?\s*/, '').replace(/\D/g, '');
+            num = '+98 ' + num;
+          }
+          // فرمت‌دهی ساده
+          num = num.replace(/^(\+98)\s*(\d{3})\s*(\d{3})\s*(\d{4}).*$/, '$1 $2 $3 $4');
+          state.me.phone = num;
+        }
+        renderSettings(); save();
+        toast('ذخیره شد');
+      }, { ltr: true, placeholder: '+98 912 345 6789' });
+    }
+
     if (act === 'export') {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -1928,6 +1951,7 @@ $('#settings-body').addEventListener('click', e => {
     if (act === 'reset') {
       showConfirm('پاک کردن همه داده‌ها', 'تمام گفتگوها و تنظیمات حذف شوند؟', () => {
         localStorage.removeItem(KEY);
+        localStorage.removeItem(COLOR_FIX_KEY);
         state = defaultState();
         renderChatList(); renderSettings(); renderContacts();
         toast('پاک شد');
@@ -1960,10 +1984,12 @@ $('#settings-body').addEventListener('click', e => {
 });
 
 /* ===================== MODAL ===================== */
-function showPrompt(title, value, onOk) {
+function showPrompt(title, value, onOk, opts = {}) {
   const box = $('#modal-box');
+  const ltr = opts.ltr ? 'dir="ltr" class="ltr"' : '';
+  const ph = opts.placeholder || 'بنویس…';
   box.innerHTML = `<h3>${esc(title)}</h3>
-    <input id="modal-input" value="${esc(value)}" placeholder="بنویس…">
+    <input id="modal-input" value="${esc(value)}" placeholder="${esc(ph)}" ${ltr}>
     <div class="modal-actions">
       <button id="modal-cancel">لغو</button>
       <button id="modal-ok" class="ok">ذخیره</button>
